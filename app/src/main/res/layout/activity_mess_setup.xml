@@ -43,7 +43,7 @@
 
         <!-- Create Mess Card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardCreateMess"
+            android:id="@+id/createMessLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="48dp"
@@ -52,6 +52,13 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvSubtitle">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCreateMess"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -122,6 +129,8 @@
 
             </LinearLayout>
 
+            </com.google.android.material.card.MaterialCardView>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Divider -->
@@ -134,7 +143,31 @@
             android:background="@color/divider"
             app:layout_constraintEnd_toStartOf="@+id/tvOr"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/cardCreateMess" />
+            app:layout_constraintTop_toBottomOf="@+id/createMessLayout" />
+
+        <TextView
+            android:id="@+id/btnShowCreate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/create_new_mess"
+            android:textColor="@color/primary"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvSubtitle" />
+
+        <TextView
+            android:id="@+id/btnShowJoin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/join_existing_mess"
+            android:textColor="@color/primary"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnShowCreate" />
 
         <TextView
             android:id="@+id/tvOr"
@@ -146,7 +179,7 @@
             android:textColor="@color/text_secondary"
             app:layout_constraintEnd_toStartOf="@+id/divider2"
             app:layout_constraintStart_toEndOf="@+id/divider1"
-            app:layout_constraintTop_toBottomOf="@+id/cardCreateMess" />
+            app:layout_constraintTop_toBottomOf="@+id/createMessLayout" />
 
         <View
             android:id="@+id/divider2"
@@ -161,7 +194,7 @@
 
         <!-- Join Mess Card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardJoinMess"
+            android:id="@+id/joinMessLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -172,6 +205,13 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvOr">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardJoinMess"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -225,6 +265,8 @@
                     app:cornerRadius="8dp" />
 
             </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </com.google.android.material.card.MaterialCardView>
 

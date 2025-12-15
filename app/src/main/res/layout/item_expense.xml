@@ -68,11 +68,20 @@
                         android:background="@color/text_secondary" />
 
                     <TextView
+                        android:id="@+id/tvPaidBy"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        tools:text="Paid by John" />
+
+                    <TextView
                         android:id="@+id/tvAddedBy"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
+                        android:visibility="gone"
                         tools:text="Added by John" />
 
                 </LinearLayout>

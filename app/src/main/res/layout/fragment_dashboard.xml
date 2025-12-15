@@ -7,6 +7,11 @@
     android:background="@color/background_light"
     tools:context=".ui.fragment.DashboardFragment">
 
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -39,6 +44,17 @@
                         tools:text="Good Morning" />
 
                     <TextView
+                        android:id="@+id/tvWelcome"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:visibility="gone"
+                        tools:text="Hello, John!" />
+
+                    <TextView
                         android:id="@+id/tvUserName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -47,6 +63,15 @@
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
                         tools:text="John Doe" />
+
+                    <TextView
+                        android:id="@+id/tvRole"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        tools:text="Manager" />
 
                 </LinearLayout>
 
@@ -132,12 +157,22 @@
                                 android:alpha="0.8" />
 
                             <TextView
+                                android:id="@+id/tvCurrentMealRate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="24sp"
+                                android:textStyle="bold"
+                                android:textColor="@android:color/white"
+                                tools:text="৳ 45.50" />
+
+                            <TextView
                                 android:id="@+id/tvMealRate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="24sp"
                                 android:textStyle="bold"
                                 android:textColor="@android:color/white"
+                                android:visibility="gone"
                                 tools:text="৳ 45.50" />
 
                         </LinearLayout>
@@ -187,6 +222,28 @@
                             android:textColor="@color/text_secondary" />
 
                         <TextView
+                            android:id="@+id/tvTodayMeals"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:visibility="gone"
+                            tools:text="3" />
+
+                        <TextView
+                            android:id="@+id/tvMonthlyMeals"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:visibility="gone"
+                            tools:text="45" />
+
+                        <TextView
                             android:id="@+id/tvTotalMeals"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -223,6 +280,16 @@
                             android:textColor="@color/text_secondary" />
 
                         <TextView
+                            android:id="@+id/tvMonthlyExpenses"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/expense_color"
+                            tools:text="৳ 12,500" />
+
+                        <TextView
                             android:id="@+id/tvTotalExpenses"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -230,6 +297,7 @@
                             android:textSize="28sp"
                             android:textStyle="bold"
                             android:textColor="@color/expense_color"
+                            android:visibility="gone"
                             tools:text="৳ 12,500" />
 
                     </LinearLayout>
@@ -514,5 +582,7 @@
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -15,9 +15,22 @@ public class PreferenceManager {
         preferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public static synchronized void init(Context context) {
+        if (instance == null) {
+            instance = new PreferenceManager(context.getApplicationContext());
+        }
+    }
+
     public static synchronized PreferenceManager getInstance(Context context) {
         if (instance == null) {
             instance = new PreferenceManager(context.getApplicationContext());
+        }
+        return instance;
+    }
+
+    public static synchronized PreferenceManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("PreferenceManager not initialized. Call init(Context) first.");
         }
         return instance;
     }

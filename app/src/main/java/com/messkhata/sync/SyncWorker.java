@@ -116,4 +116,11 @@ public class SyncWorker extends Worker {
     public static void cancelSync(Context context) {
         WorkManager.getInstance(context).cancelAllWorkByTag(Constants.WORK_SYNC);
     }
+
+    /**
+     * Enqueue immediate sync (alias for triggerImmediateSync).
+     */
+    public static void enqueueImmediateSync(Context context) {
+        triggerImmediateSync(context);
+    }
 }

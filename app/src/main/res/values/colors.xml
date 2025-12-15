@@ -49,6 +49,9 @@
     <color name="category_maintenance">#FF795548</color>
     <color name="category_other">#FF607D8B</color>
 
+    <!-- Chip Colors -->
+    <color name="chip_background">#FFE0E0E0</color>
+
     <!-- Role Colors -->
     <color name="role_admin">#FFE53935</color>
     <color name="role_manager">#FFFF9800</color>

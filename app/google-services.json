@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "198573971696",
+    "project_id": "messkhata-7a2d9",
+    "storage_bucket": "messkhata-7a2d9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198573971696:android:aff1a6f1988808408b4a35",
+        "android_client_info": {
+          "package_name": "com.messkhata"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "198573971696-vgtn5u13m2lcj65re6ff42cud2i15hct.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmh1oI04do_R6lGUfYPYT0jnr73NjEIl0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "198573971696-vgtn5u13m2lcj65re6ff42cud2i15hct.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

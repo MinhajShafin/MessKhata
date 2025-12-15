@@ -79,6 +79,70 @@
 
             </LinearLayout>
 
+            <!-- Additional Balance Details -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tvMealCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_hint"
+                    tools:text="Meals: 45" />
+
+                <TextView
+                    android:id="@+id/tvMealCost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_hint"
+                    tools:text="Cost: ৳2000" />
+
+                <TextView
+                    android:id="@+id/tvFixedShare"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_hint"
+                    tools:text="Fixed: ৳500" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tvTotalDue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_hint"
+                    tools:text="Due: ৳2500" />
+
+                <TextView
+                    android:id="@+id/tvTotalPaid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_hint"
+                    tools:text="Paid: ৳1500" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- Balance -->
@@ -104,6 +168,13 @@
                 android:textSize="10sp"
                 android:textStyle="bold"
                 tools:text="TO PAY" />
+
+            <View
+                android:id="@+id/balanceIndicator"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/circle_background" />
 
         </LinearLayout>
 

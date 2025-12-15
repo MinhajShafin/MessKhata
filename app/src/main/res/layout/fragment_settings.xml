@@ -180,6 +180,17 @@
                             android:textColor="@color/text_secondary" />
 
                         <TextView
+                            android:id="@+id/tvMessJoinCode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:fontFamily="monospace"
+                            tools:text="ABCD1234" />
+
+                        <TextView
                             android:id="@+id/tvJoinCode"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -188,6 +199,7 @@
                             android:textStyle="bold"
                             android:textColor="@color/primary"
                             android:fontFamily="monospace"
+                            android:visibility="gone"
                             tools:text="ABCD1234" />
 
                     </LinearLayout>
@@ -358,13 +370,21 @@
 
                 <!-- Sync Now -->
                 <LinearLayout
-                    android:id="@+id/layoutSync"
+                    android:id="@+id/btnSyncNow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:padding="16dp"
                     android:background="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:id="@+id/layoutSync"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
                     <ImageView
                         android:layout_width="24dp"
@@ -402,6 +422,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:visibility="gone" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 

@@ -134,11 +134,19 @@
                 android:scrollbars="none">
 
                 <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupFilter"
+                    android:id="@+id/chipGroupCategories"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:singleSelection="true"
                     app:selectionRequired="true">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupFilter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        android:visibility="gone"
+                        app:selectionRequired="true">
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipAll"
@@ -192,15 +200,22 @@
 
                 </com.google.android.material.chip.ChipGroup>
 
+                </com.google.android.material.chip.ChipGroup>
+
             </HorizontalScrollView>
 
         </LinearLayout>
 
-        <!-- Expenses List -->
-        <FrameLayout
+        <!-- Expenses List with SwipeRefreshLayout -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvExpenses"
@@ -253,6 +268,8 @@
             </LinearLayout>
 
         </FrameLayout>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     </LinearLayout>
 

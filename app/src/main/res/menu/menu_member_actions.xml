@@ -6,8 +6,16 @@
         android:title="@string/make_manager" />
 
     <item
+        android:id="@+id/action_make_member"
+        android:title="@string/make_member" />
+
+    <item
         android:id="@+id/action_make_admin"
         android:title="@string/make_admin" />
+
+    <item
+        android:id="@+id/action_remove"
+        android:title="@string/remove_member" />
 
     <item
         android:id="@+id/action_remove_member"

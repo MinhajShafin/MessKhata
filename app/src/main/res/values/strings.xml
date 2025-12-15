@@ -129,6 +129,7 @@
     <string name="role_manager">Manager</string>
     <string name="role_member">Member</string>
     <string name="make_manager">Make Manager</string>
+    <string name="make_member">Make Member</string>
     <string name="make_admin">Make Admin</string>
     <string name="remove_member">Remove Member</string>
 
@@ -139,6 +140,7 @@
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="ok">OK</string>
+    <string name="shared_equally">Shared Equally</string>
 
     <!-- Messages -->
     <string name="loading">Loading…</string>

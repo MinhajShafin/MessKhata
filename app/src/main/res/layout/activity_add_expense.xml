@@ -69,6 +69,18 @@
 
         <!-- Category Chips -->
         <com.google.android.material.chip.ChipGroup
+            android:id="@+id/spinnerCategory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvCategoryLabel" />
+
+        <com.google.android.material.chip.ChipGroup
             android:id="@+id/chipGroupCategory"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -135,6 +147,22 @@
             android:textColor="@color/text_secondary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/chipGroupCategory" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/etDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/divider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvDateLabel" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardDate"
@@ -205,6 +233,30 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Include in Meal Rate Checkbox -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchIncludeInMealRate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/include_in_meal_rate"
+            android:checked="true"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilDescription" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchSharedEqually"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/shared_equally"
+            android:checked="true"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/switchIncludeInMealRate" />
+
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cbIncludeInMealRate"
             android:layout_width="0dp"
@@ -214,7 +266,7 @@
             android:checked="true"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tilDescription" />
+            app:layout_constraintTop_toBottomOf="@+id/switchSharedEqually" />
 
         <!-- Helper Text -->
         <TextView

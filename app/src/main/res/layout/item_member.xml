@@ -47,7 +47,7 @@
                 android:textColor="@color/text_primary"
                 tools:text="John Doe" />
 
-            <!-- Role Badge -->
+            <!-- Role Badge (deprecated) -->
             <TextView
                 android:id="@+id/tvRole"
                 android:layout_width="wrap_content"
@@ -59,6 +59,19 @@
                 android:textSize="8sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
+                android:visibility="gone"
+                tools:text="ADMIN"
+                tools:visibility="visible" />
+
+            <!-- Role Chip (new) -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRole"
+                style="@style/Widget.MaterialComponents.Chip.Action"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="10sp"
+                android:clickable="false"
                 android:visibility="gone"
                 tools:text="ADMIN"
                 tools:visibility="visible" />
