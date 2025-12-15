@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_make_manager"
+        android:title="@string/make_manager" />
+
+    <item
+        android:id="@+id/action_make_admin"
+        android:title="@string/make_admin" />
+
+    <item
+        android:id="@+id/action_remove_member"
+        android:title="@string/remove_member" />
+
+</menu>
