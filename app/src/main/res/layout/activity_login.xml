@@ -97,19 +97,7 @@
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Forgot Password -->
-        <TextView
-            android:id="@+id/tvForgotPassword"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:padding="8dp"
-            android:text="@string/forgot_password"
-            android:textColor="@color/primary"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tilPassword" />
+        
 
         <!-- Login Button -->
         <com.google.android.material.button.MaterialButton
@@ -122,7 +110,7 @@
             app:cornerRadius="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvForgotPassword" />
+            app:layout_constraintTop_toBottomOf="@+id/tilPassword" />
 
         <!-- Progress Bar -->
         <ProgressBar
@@ -187,16 +175,17 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/tvSignUp"
+            <Button
+                android:id="@+id/btnSignUp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:padding="4dp"
+                android:layout_marginTop="24dp"
                 android:text="@string/sign_up"
-                android:textColor="@color/primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textAllCaps="false"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvOr" />
 
         </LinearLayout>
 

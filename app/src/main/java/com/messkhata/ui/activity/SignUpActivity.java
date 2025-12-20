@@ -3,40 +3,43 @@ package com.messkhata.ui.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.messkhata.R;
-import com.messkhata.ui.viewmodel.AuthViewModel;
+import com.messkhata.data.dao.UserDao;
+import com.messkhata.data.database.MessKhataDatabase;
 
 /**
  * Sign Up Activity for new user registration.
  */
 public class SignUpActivity extends AppCompatActivity {
 
-    private AuthViewModel viewModel;
     private TextInputEditText etName;
     private TextInputEditText etEmail;
     private TextInputEditText etPhone;
     private TextInputEditText etPassword;
     private TextInputEditText etConfirmPassword;
     private MaterialButton btnSignUp;
+    private Button btnLogin;
     private View progressBar;
+
+    private UserDao userDao;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        // Initialize DAO
+        userDao = new UserDao(this);
 
         initViews();
         setupListeners();
-        observeAuthResult();
     }
 
     private void initViews() {
@@ -46,8 +49,16 @@ public class SignUpActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.etPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
         btnSignUp = findViewById(R.id.btnSignUp);
+        btnLogin = findViewById(R.id.btnLogin);
         progressBar = findViewById(R.id.progressBar);
 
+        btnLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+                startActivity(intent);
+            }
+        });
         findViewById(R.id.btnBack).setOnClickListener(v -> onBackPressed());
     }
 
@@ -73,6 +84,11 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
+        if (phone.isEmpty()) {
+            etPhone.setError("Phone is required");
+            return;
+        }
+
         if (password.isEmpty()) {
             etPassword.setError("Password is required");
             return;
@@ -89,26 +105,31 @@ public class SignUpActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        viewModel.signUp(email, password, name, phone);
-    }
 
-    private void observeAuthResult() {
-        viewModel.getAuthResult().observe(this, result -> {
-            showLoading(false);
-            if (result.success) {
-                Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show();
-                navigateToMessSetup();
-            } else {
-                Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
-            }
+        // Register user in background thread
+        MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+            boolean success = userDao.registerUser(name, email, phone, password);
+
+            // Update UI on main thread
+            runOnUiThread(() -> {
+                showLoading(false);
+                if (success) {
+                    Toast.makeText(SignUpActivity.this,
+                            "Registration successful!",
+                            Toast.LENGTH_SHORT).show();
+
+                    // Go to login screen
+                    Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+                    intent.putExtra("email", email);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Toast.makeText(SignUpActivity.this,
+                            "Registration failed. Email or phone already exists.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
         });
-    }
-
-    private void navigateToMessSetup() {
-        Intent intent = new Intent(this, MessSetupActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 
     private String getText(TextInputEditText editText) {

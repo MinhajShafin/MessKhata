@@ -1,62 +1,145 @@
 package com.messkhata.data.dao;
 
-import androidx.lifecycle.LiveData;
-import androidx.room.Dao;
-import androidx.room.Delete;
-import androidx.room.Insert;
-import androidx.room.OnConflictStrategy;
-import androidx.room.Query;
-import androidx.room.Update;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 
-import com.messkhata.data.model.User;
+import com.messkhata.data.database.MessKhataDatabase;
 
-import java.util.List;
+/**
+ * Data Access Object for User operations
+ */
+public class UserDao {
 
-@Dao
-public interface UserDao {
+    private MessKhataDatabase dbHelper;
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insert(User user);
+    public UserDao(Context context) {
+        this.dbHelper = MessKhataDatabase.getInstance(context);
+    }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertAll(List<User> users);
+    /**
+     * Register a new user
+     * @return true if successful, false if email/phone already exists
+     */
+    public boolean registerUser(String name, String email, String phone, String password) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-    @Update
-    void update(User user);
+        try {
+            // Check if email or phone already exists
+            if (isEmailExists(email) || isPhoneExists(phone)) {
+                return false;
+            }
 
-    @Delete
-    void delete(User user);
+            // Insert new user
+            ContentValues values = new ContentValues();
+            values.put("fullName", name);
+            values.put("email", email);
+            values.put("phoneNumber", phone);
+            values.put("password", password); // Hash in production!
+            values.put("role", "member");
+            values.put("isActive", 1);
+            values.put("joinedDate", System.currentTimeMillis() / 1000);
 
-    @Query("SELECT * FROM users WHERE id = :userId")
-    LiveData<User> getUserById(String userId);
+            long result = db.insert(MessKhataDatabase.TABLE_USERS, null, values);
+            return result != -1;
 
-    @Query("SELECT * FROM users WHERE id = :userId")
-    User getUserByIdSync(String userId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
-    User getUserByEmail(String email);
+    /**
+     * Check if email already exists
+     */
+    public boolean isEmailExists(String email) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-    @Query("SELECT * FROM users WHERE messId = :messId AND isActive = 1")
-    LiveData<List<User>> getActiveUsersByMess(String messId);
+        String query = "SELECT 1 FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE email = ? LIMIT 1";
+        Cursor cursor = db.rawQuery(query, new String[]{email});
 
-    @Query("SELECT * FROM users WHERE messId = :messId AND isActive = 1")
-    List<User> getActiveUsersByMessSync(String messId);
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
 
-    @Query("SELECT * FROM users WHERE messId = :messId")
-    LiveData<List<User>> getAllUsersByMess(String messId);
+    /**
+     * Check if phone number already exists
+     */
+    public boolean isPhoneExists(String phone) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-    @Query("SELECT COUNT(*) FROM users WHERE messId = :messId AND isActive = 1")
-    int getActiveMemberCount(String messId);
+        String query = "SELECT 1 FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE phoneNumber = ? LIMIT 1";
+        Cursor cursor = db.rawQuery(query, new String[]{phone});
 
-    @Query("SELECT * FROM users WHERE isSynced = 0")
-    List<User> getUnsyncedUsers();
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
 
-    @Query("UPDATE users SET isSynced = 1, pendingAction = NULL WHERE id = :userId")
-    void markAsSynced(String userId);
+    /**
+     * Login user - verify credentials
+     * @return userId if successful, -1 if failed
+     */
+    public long loginUser(String email, String password) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-    @Query("UPDATE users SET pendingAction = :action, isSynced = 0, updatedAt = :timestamp WHERE id = :userId")
-    void markForSync(String userId, String action, long timestamp);
+        String query = "SELECT userId FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE email = ? AND password = ? AND isActive = 1";
+        Cursor cursor = db.rawQuery(query, new String[]{email, password});
 
-    @Query("DELETE FROM users WHERE id = :userId")
-    void deleteById(String userId);
+        long userId = -1;
+        if (cursor.moveToFirst()) {
+            userId = cursor.getLong(0);
+        }
+        cursor.close();
+        return userId;
+    }
+
+    /**
+     * Get user by ID
+     */
+    public Cursor getUserById(long userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE userId = ?";
+        return db.rawQuery(query, new String[]{String.valueOf(userId)});
+    }
+
+    /**
+     * Update user profile
+     */
+    public boolean updateUser(long userId, String name, String phone) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("fullName", name);
+        values.put("phoneNumber", phone);
+
+        int rows = db.update(MessKhataDatabase.TABLE_USERS,
+                values,
+                "userId = ?",
+                new String[]{String.valueOf(userId)});
+        return rows > 0;
+    }
+
+    /**
+     * Delete user (soft delete - set isActive to 0)
+     */
+    public boolean deleteUser(long userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("isActive", 0);
+
+        int rows = db.update(MessKhataDatabase.TABLE_USERS,
+                values,
+                "userId = ?",
+                new String[]{String.valueOf(userId)});
+        return rows > 0;
+    }
 }

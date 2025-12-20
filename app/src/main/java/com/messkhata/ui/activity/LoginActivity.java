@@ -1,47 +1,52 @@
 package com.messkhata.ui.activity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.messkhata.MainActivity;
 import com.messkhata.R;
-import com.messkhata.ui.viewmodel.AuthViewModel;
+import com.messkhata.data.dao.UserDao;
+import com.messkhata.data.database.MessKhataDatabase;
 
 /**
  * Login Activity for user authentication.
  */
 public class LoginActivity extends AppCompatActivity {
 
-    private AuthViewModel viewModel;
     private TextInputEditText etEmail;
     private TextInputEditText etPassword;
     private MaterialButton btnLogin;
     private MaterialButton btnSignUp;
     private View progressBar;
 
+    private UserDao userDao;
+    private SharedPreferences sharedPreferences;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        // Initialize DAO
+        userDao = new UserDao(this);
 
-        // Check if already logged in
-        if (viewModel.isLoggedIn()) {
-            navigateToNextScreen();
-            return;
-        }
+        // Initialize SharedPreferences for storing user session
+        sharedPreferences = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
 
         initViews();
         setupListeners();
-        observeAuthResult();
+
+        // Pre-fill email if coming from SignUp
+        String email = getIntent().getStringExtra("email");
+        if (email != null && !email.isEmpty()) {
+            etEmail.setText(email);
+        }
     }
 
     private void initViews() {
@@ -54,13 +59,21 @@ public class LoginActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnLogin.setOnClickListener(v -> attemptLogin());
-        btnSignUp.setOnClickListener(v -> navigateToSignUp());
+
+        btnSignUp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private void attemptLogin() {
-        String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
-        String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
+        String email = getText(etEmail);
+        String password = getText(etPassword);
 
+        // Validation
         if (email.isEmpty()) {
             etEmail.setError("Email is required");
             return;
@@ -72,34 +85,47 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        viewModel.signIn(email, password);
-    }
 
-    private void observeAuthResult() {
-        viewModel.getAuthResult().observe(this, result -> {
-            showLoading(false);
-            if (result.success) {
-                navigateToNextScreen();
-            } else {
-                Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
-            }
+        // Login in background thread
+        MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+            long userId = userDao.loginUser(email, password);
+
+            // Update UI on main thread
+            runOnUiThread(() -> {
+                showLoading(false);
+
+                if (userId != -1) {
+                    // Login successful - save user session
+                    saveUserSession(userId, email);
+
+                    Toast.makeText(LoginActivity.this,
+                            "Login successful!",
+                            Toast.LENGTH_SHORT).show();
+
+                    // Navigate to MessSetupActivity
+                    Intent intent = new Intent(LoginActivity.this, MessSetupActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Toast.makeText(LoginActivity.this,
+                            "Invalid email or password",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 
-    private void navigateToNextScreen() {
-        Intent intent;
-        if (viewModel.hasJoinedMess()) {
-            intent = new Intent(this, MainActivity.class);
-        } else {
-            intent = new Intent(this, MessSetupActivity.class);
-        }
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+    private void saveUserSession(long userId, String email) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong("userId", userId);
+        editor.putString("userEmail", email);
+        editor.putBoolean("isLoggedIn", true);
+        editor.apply();
     }
 
-    private void navigateToSignUp() {
-        startActivity(new Intent(this, SignUpActivity.class));
+    private String getText(TextInputEditText editText) {
+        return editText.getText() != null ? editText.getText().toString().trim() : "";
     }
 
     private void showLoading(boolean show) {

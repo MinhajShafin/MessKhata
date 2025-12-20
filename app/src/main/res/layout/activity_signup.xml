@@ -204,14 +204,14 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/tvLogin"
+            <Button
+                android:id="@+id/btnLogin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:padding="4dp"
                 android:text="@string/btn_login"
-                android:textColor="@color/primary"
+                android:textColor="@color/white"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

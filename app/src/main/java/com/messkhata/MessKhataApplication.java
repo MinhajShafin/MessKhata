@@ -21,11 +21,7 @@ public class MessKhataApplication extends Application implements Configuration.P
         super.onCreate();
         instance = this;
 
-        // Initialize PreferenceManager
-        PreferenceManager.init(this);
-
-        // Initialize Database
-        MessKhataDatabase.getInstance(this);
+        MessKhataDatabase.getInstance(this).getWritableDatabase();
 
         // Create notification channels
         createNotificationChannels();

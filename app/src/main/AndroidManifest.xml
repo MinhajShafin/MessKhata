@@ -54,14 +54,6 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Firebase Cloud Messaging Service -->
-        <service
-            android:name=".sync.MessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
 
         <!-- Boot Receiver for WorkManager -->
         <receiver
