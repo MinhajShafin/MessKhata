@@ -58,7 +58,7 @@
                 android:background="@drawable/rounded_chip_background"
                 android:textSize="8sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:visibility="gone"
                 tools:text="ADMIN"
                 tools:visibility="visible" />

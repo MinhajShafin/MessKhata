@@ -3,60 +3,65 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Primary Colors -->
-    <color name="primary">#FF4CAF50</color>
-    <color name="primary_dark">#FF388E3C</color>
-    <color name="primary_light">#FFC8E6C9</color>
-    <color name="primary_variant">#FF2E7D32</color>
+    <!-- Monochrome Dark Theme Colors -->
+    <!-- Primary Colors - Grayscale -->
+    <color name="primary">#FFFFFFFF</color>
+    <color name="primary_dark">#FF121212</color>
+    <color name="primary_light">#FF2A2A2A</color>
+    <color name="primary_variant">#FFE0E0E0</color>
 
-    <!-- Secondary Colors -->
-    <color name="secondary">#FF03DAC5</color>
-    <color name="secondary_variant">#FF018786</color>
+    <!-- Secondary Colors - Grayscale -->
+    <color name="secondary">#FFB0B0B0</color>
+    <color name="secondary_variant">#FF808080</color>
 
-    <!-- Background Colors -->
-    <color name="background_light">#FFF5F5F5</color>
-    <color name="surface">#FFFFFFFF</color>
+    <!-- Background Colors - Dark -->
+    <color name="background_light">#FF121212</color>
+    <color name="surface">#FF1E1E1E</color>
 
-    <!-- Text Colors -->
-    <color name="text_primary">#DE000000</color>
-    <color name="text_secondary">#99000000</color>
-    <color name="text_hint">#61000000</color>
+    <!-- Text Colors - Light on Dark -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#B3FFFFFF</color>
+    <color name="text_hint">#66FFFFFF</color>
 
-    <!-- Status Colors -->
-    <color name="error">#FFB00020</color>
+    <!-- Status Colors - Keep functional colors -->
+    <color name="error">#FFCF6679</color>
     <color name="success">#FF4CAF50</color>
     <color name="warning">#FFFFC107</color>
-    <color name="info">#FF2196F3</color>
+    <color name="info">#FF90CAF9</color>
 
-    <!-- Expense Color -->
-    <color name="expense_color">#FFE53935</color>
-    <color name="expense_background">#FFFFEBEE</color>
+    <!-- Expense Color - Red for attention -->
+    <color name="expense_color">#FFEF5350</color>
+    <color name="expense_background">#1AEF5350</color>
 
-    <!-- Balance Colors -->
-    <color name="balance_positive">#FF4CAF50</color>
-    <color name="balance_negative">#FFE53935</color>
-    <color name="balance_neutral">#FF9E9E9E</color>
+    <!-- Balance Colors - Keep functional -->
+    <color name="balance_positive">#FF66BB6A</color>
+    <color name="balance_negative">#FFEF5350</color>
+    <color name="balance_neutral">#FF757575</color>
 
-    <!-- Meal Colors -->
-    <color name="meal_active">#FF4CAF50</color>
-    <color name="meal_inactive">#FFBDBDBD</color>
+    <!-- Meal Colors - Monochrome -->
+    <color name="meal_active">#FFFFFFFF</color>
+    <color name="meal_inactive">#FF424242</color>
 
-    <!-- Category Colors -->
-    <color name="category_grocery">#FF4CAF50</color>
-    <color name="category_utility">#FF2196F3</color>
-    <color name="category_gas">#FFFF9800</color>
-    <color name="category_rent">#FF9C27B0</color>
-    <color name="category_maintenance">#FF795548</color>
-    <color name="category_other">#FF607D8B</color>
+    <!-- Category Colors - All grayscale -->
+    <color name="category_grocery">#FFE0E0E0</color>
+    <color name="category_utility">#FFB0B0B0</color>
+    <color name="category_gas">#FF909090</color>
+    <color name="category_rent">#FF707070</color>
+    <color name="category_maintenance">#FF606060</color>
+    <color name="category_other">#FF505050</color>
 
     <!-- Chip Colors -->
-    <color name="chip_background">#FFE0E0E0</color>
+    <color name="chip_background">#FF2A2A2A</color>
 
-    <!-- Role Colors -->
-    <color name="role_admin">#FFE53935</color>
-    <color name="role_manager">#FFFF9800</color>
-    <color name="role_member">#FF2196F3</color>
+    <!-- Role Colors - Monochrome with subtle distinction -->
+    <color name="role_admin">#FFFFFFFF</color>
+    <color name="role_manager">#FFB0B0B0</color>
+    <color name="role_member">#FF707070</color>
 
     <!-- Divider -->
-    <color name="divider">#1F000000</color>
+    <color name="divider">#33FFFFFF</color>
+
+    <!-- Card Colors -->
+    <color name="card_background">#FF1E1E1E</color>
+    <color name="card_elevated">#FF252525</color>
 </resources>

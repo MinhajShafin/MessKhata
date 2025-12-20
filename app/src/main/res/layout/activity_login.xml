@@ -35,7 +35,7 @@
             android:text="@string/app_name"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/primary"
+            android:textColor="@color/text_primary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ivLogo" />
@@ -97,7 +97,19 @@
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
-        
+
+        <!-- Forgot Password -->
+        <TextView
+            android:id="@+id/tvForgotPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            android:text="@string/forgot_password"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilPassword" />
 
         <!-- Login Button -->
         <com.google.android.material.button.MaterialButton
@@ -110,7 +122,7 @@
             app:cornerRadius="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tilPassword" />
+            app:layout_constraintTop_toBottomOf="@+id/tvForgotPassword" />
 
         <!-- Progress Bar -->
         <ProgressBar
@@ -175,17 +187,16 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
 
-            <Button
-                android:id="@+id/btnSignUp"
+            <TextView
+                android:id="@+id/tvSignUp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginStart="4dp"
+                android:padding="4dp"
                 android:text="@string/sign_up"
-                android:textAllCaps="false"
-                app:cornerRadius="8dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/tvOr" />
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 

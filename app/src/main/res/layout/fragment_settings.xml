@@ -78,7 +78,7 @@
                         android:background="@drawable/rounded_chip_background"
                         android:textSize="10sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/white"
+                        android:textColor="@color/text_primary"
                         tools:text="ADMIN" />
 
                 </LinearLayout>
@@ -186,7 +186,7 @@
                             android:layout_marginTop="4dp"
                             android:textSize="24sp"
                             android:textStyle="bold"
-                            android:textColor="@color/primary"
+                            android:textColor="@color/text_primary"
                             android:fontFamily="monospace"
                             tools:text="ABCD1234" />
 
@@ -197,7 +197,7 @@
                             android:layout_marginTop="4dp"
                             android:textSize="24sp"
                             android:textStyle="bold"
-                            android:textColor="@color/primary"
+                            android:textColor="@color/text_primary"
                             android:fontFamily="monospace"
                             android:visibility="gone"
                             tools:text="ABCD1234" />
