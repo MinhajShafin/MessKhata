@@ -93,7 +93,8 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "messName TEXT NOT NULL, " +
                     "groceryBudgetPerMeal REAL NOT NULL DEFAULT 40.00, " +
                     "cookingChargePerMeal REAL NOT NULL DEFAULT 10.00, " +
-                    "createdDate INTEGER DEFAULT (strftime('%s', 'now')))");
+                    "createdDate INTEGER DEFAULT (strftime('%s','now'))" +
+                    ");";
 
     // SQL for creating Users table
     private static final String CREATE_USERS_TABLE =
@@ -158,9 +159,11 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "cookingCharge REAL NOT NULL, " +
                     "isFinalized INTEGER DEFAULT 0, " +
                     "finalizedDate INTEGER, " +
-                    "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
+                    "createdAt INTEGER DEFAULT (strftime('%s','now')), " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
-                    "UNIQUE(messId, month, year)");
+                    "UNIQUE(messId, month, year)" +
+                    ");";
+
 
     // SQL for creating MonthlyBills table
     private static final String CREATE_MONTHLY_BILLS_TABLE =
@@ -184,7 +187,8 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "updatedAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
-                    "UNIQUE(userId, messId, month, year)");
+                    "UNIQUE(userId, messId, month, year)" +
+                    ");";
 
     // SQL for creating Payments table
     private static final String CREATE_PAYMENTS_TABLE =

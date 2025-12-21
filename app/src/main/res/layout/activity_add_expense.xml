@@ -257,31 +257,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/switchIncludeInMealRate" />
 
-        <com.google.android.material.checkbox.MaterialCheckBox
-            android:id="@+id/cbIncludeInMealRate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/include_in_meal_rate"
-            android:checked="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/switchSharedEqually" />
 
-        <!-- Helper Text -->
-        <TextView
-            android:id="@+id/tvIncludeHelper"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:text="@string/include_helper_text"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/cbIncludeInMealRate" />
+
+
 
         <!-- Save Button -->
+
+        <!-- Progress Bar -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
             android:layout_width="0dp"
@@ -293,10 +275,11 @@
             app:cornerRadius="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvIncludeHelper" />
+            app:layout_constraintTop_toBottomOf="@+id/switchIncludeInMealRate"
+            app:layout_constraintVertical_bias="1.0" />
 
-        <!-- Progress Bar -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"

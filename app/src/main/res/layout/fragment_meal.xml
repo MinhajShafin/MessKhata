@@ -21,13 +21,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
-            android:id="@+id/btnPrevDay"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_media_previous"
-            android:contentDescription="@string/previous_day" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -43,7 +36,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
-                tools:text="December 15, 2024" />
+                tools:text="December, 2024" />
 
             <TextView
                 android:id="@+id/tvDayName"
@@ -66,22 +59,8 @@
 
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnNextDay"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_media_next"
-            android:contentDescription="@string/next_day" />
 
-        <ImageButton
-            android:id="@+id/btnCalendar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_my_calendar"
-            android:contentDescription="@string/select_date" />
+
 
     </LinearLayout>
 
