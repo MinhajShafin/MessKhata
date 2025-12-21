@@ -1,7 +1,6 @@
 package com.messkhata.ui.activity;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -14,6 +13,8 @@ import com.messkhata.MainActivity;
 import com.messkhata.R;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
+import com.messkhata.data.model.User;
+import com.messkhata.utils.PreferenceManager;
 
 /**
  * Login Activity for user authentication.
@@ -27,7 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     private View progressBar;
 
     private UserDao userDao;
-    private SharedPreferences sharedPreferences;
+    private PreferenceManager prefManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,8 +38,8 @@ public class LoginActivity extends AppCompatActivity {
         // Initialize DAO
         userDao = new UserDao(this);
 
-        // Initialize SharedPreferences for storing user session
-        sharedPreferences = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
+        // Initialize PreferenceManager
+        prefManager = PreferenceManager.getInstance(this);
 
         initViews();
         setupListeners();
@@ -96,28 +97,40 @@ public class LoginActivity extends AppCompatActivity {
                 showLoading(false);
 
                 if (userId != -1) {
-                    // Check if user already has a mess
-                    int messId = userDao.getUserMessId(userId);
+                    // Get full user details
+                    User user = userDao.getUserByIdAsObject((int) userId);
+                    
+                    if (user != null) {
+                        // Save user session with PreferenceManager
+                        prefManager.saveUserSession(
+                            String.valueOf(userId),
+                            String.valueOf(user.getMessId()),
+                            user.getRole(),
+                            user.getFullName(),
+                            user.getEmail()
+                        );
 
-                    // Save user session with mess info
-                    saveUserSession(userId, email, messId);
+                        Toast.makeText(LoginActivity.this,
+                                "Login successful!",
+                                Toast.LENGTH_SHORT).show();
 
-                    Toast.makeText(LoginActivity.this,
-                            "Login successful!",
-                            Toast.LENGTH_SHORT).show();
+                        Intent intent;
+                        if (user.getMessId() > 0) {
+                            // User already in mess - go to MainActivity
+                            intent = new Intent(LoginActivity.this, MainActivity.class);
+                        } else {
+                            // User needs to create/join mess
+                            intent = new Intent(LoginActivity.this, MessSetupActivity.class);
+                        }
 
-                    Intent intent;
-                    if (messId != -1) {
-                        // User already in mess - go to MainActivity
-                        intent = new Intent(LoginActivity.this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
                     } else {
-                        // User needs to create/join mess
-                        intent = new Intent(LoginActivity.this, MessSetupActivity.class);
+                        Toast.makeText(LoginActivity.this,
+                                "Error loading user data",
+                                Toast.LENGTH_SHORT).show();
                     }
-
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
                 } else {
                     Toast.makeText(LoginActivity.this,
                             "Invalid email or password",
@@ -125,15 +138,6 @@ public class LoginActivity extends AppCompatActivity {
                 }
             });
         });
-    }
-
-    private void saveUserSession(long userId, String email, int messId) {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putLong("userId", userId);
-        editor.putString("userEmail", email);
-        editor.putInt("messId", messId);
-        editor.putBoolean("isLoggedIn", true);
-        editor.apply();
     }
 
     private String getText(TextInputEditText editText) {
