@@ -25,6 +25,7 @@ public class ExpenseDao {
 
     /**
      * Add new expense
+     * @param expenseDate Date in milliseconds (will be converted to seconds for storage)
      * @return expenseId if successful, -1 if failed
      */
     public long addExpense(int messId, int addedBy, String category, 
@@ -38,7 +39,7 @@ public class ExpenseDao {
             values.put("category", category);
             values.put("amount", amount);
             values.put("description", description);
-            values.put("expenseDate", expenseDate);
+            values.put("expenseDate", expenseDate / 1000); // Convert milliseconds to seconds
             values.put("createdAt", System.currentTimeMillis() / 1000);
             values.put("updatedAt", System.currentTimeMillis() / 1000);
 
