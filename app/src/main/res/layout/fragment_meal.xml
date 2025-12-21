@@ -124,7 +124,7 @@
                 android:gravity="center">
 
                 <TextView
-                    android:id="@+id/tvBreakfastCount"
+                    android:id="@+id/tvBreakfastSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
@@ -133,7 +133,7 @@
                     tools:text="B: 8" />
 
                 <TextView
-                    android:id="@+id/tvLunchCount"
+                    android:id="@+id/tvLunchSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
@@ -142,7 +142,7 @@
                     tools:text="L: 8" />
 
                 <TextView
-                    android:id="@+id/tvDinnerCount"
+                    android:id="@+id/tvDinnerSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"

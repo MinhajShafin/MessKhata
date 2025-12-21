@@ -97,7 +97,7 @@ public class DashboardFragment extends Fragment {
     }
 
     private void loadSessionData() {
-        prefManager = new PreferenceManager(requireContext());
+        prefManager = PreferenceManager.getInstance(requireContext());
         userId = Long.parseLong(prefManager.getUserId());
         messId = Integer.parseInt(prefManager.getMessId());
     }

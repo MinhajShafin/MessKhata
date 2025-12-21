@@ -91,7 +91,7 @@ public class ReportFragment extends Fragment {
 
     private void initializeDAO() {
     private void loadSessionData() {
-        prefManager = new PreferenceManager(requireContext());
+        prefManager = PreferenceManager.getInstance(requireContext());
         messId = Integer.parseInt(prefManager.getMessId());
         userRole = prefManager.getRole();
         currentMonth = Calendar.getInstance();

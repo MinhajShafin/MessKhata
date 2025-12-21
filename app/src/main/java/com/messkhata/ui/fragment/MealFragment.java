@@ -34,9 +34,9 @@ public class MealFragment extends Fragment {
     
     // UI Components - Summary
     private TextView tvTotalMealsToday;
-    private TextView tvBreakfastCount;
-    private TextView tvLunchCount;
-    private TextView tvDinnerCount;
+    private TextView tvBreakfastSummary;
+    private TextView tvLunchSummary;
+    private TextView tvDinnerSummary;
     
     // UI Components - Meal Preference Counters
     private MaterialButton btnBreakfastMinus;
@@ -92,6 +92,9 @@ public class MealFragment extends Fragment {
         
         // Summary (using different IDs to avoid conflict)
         tvTotalMealsToday = view.findViewById(R.id.tvTotalMealsToday);
+        tvBreakfastSummary = view.findViewById(R.id.tvBreakfastSummary);
+        tvLunchSummary = view.findViewById(R.id.tvLunchSummary);
+        tvDinnerSummary = view.findViewById(R.id.tvDinnerSummary);
         
         // Preference counters
         btnBreakfastMinus = view.findViewById(R.id.btnBreakfastMinus);
@@ -114,7 +117,7 @@ public class MealFragment extends Fragment {
     }
 
     private void loadSessionData() {
-        prefManager = new PreferenceManager(requireContext());
+        prefManager = PreferenceManager.getInstance(requireContext());
         userId = Long.parseLong(prefManager.getUserId());
         messId = Integer.parseInt(prefManager.getMessId());
         currentDate = Calendar.getInstance();

@@ -110,7 +110,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     }
 
     private void loadSessionData() {
-        prefManager = new PreferenceManager(requireContext());
+        prefManager = PreferenceManager.getInstance(requireContext());
         userId = Long.parseLong(prefManager.getUserId());
         messId = Integer.parseInt(prefManager.getMessId());
         userRole = prefManager.getUserRole();
