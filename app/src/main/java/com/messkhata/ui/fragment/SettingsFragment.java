@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -85,6 +83,13 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         loadMessInfo();
         loadMembers();
     }
+
+    private void initializeViews(View view) {
+        // User profile
+        tvUserName = view.findViewById(R.id.tvUserName);
+        tvUserEmail = view.findViewById(R.id.tvUserEmail);
+        tvUserRole = view.findViewById(R.id.tvUserRole);
+        
         // Mess info
         tvMessName = view.findViewById(R.id.tvMessName);
         tvMessAddress = view.findViewById(R.id.tvMessAddress);
@@ -99,14 +104,13 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         
         // Actions
         btnLogout = view.findViewById(R.id.btnLogout);
-    }   tvMessName = view.findViewById(R.id.tvMessName);
-        tvMessAddress = view.findViewById(R.id.tvMessAddress);
-        tvMessJoinCode = view.findViewById(R.id.tvMessJoinCode);
-        cardMemberManagement = view.findViewById(R.id.cardMemberManagement);
-        
-        // Actions
-        btnLogout = view.findViewById(R.id.btnLogout);
     }
+
+    private void initializeDAOs() {
+        userDao = new UserDao(requireContext());
+        messDao = new MessDao(requireContext());
+    }
+
     private void loadSessionData() {
         prefManager = new PreferenceManager(requireContext());
         userId = Long.parseLong(prefManager.getUserId());
@@ -119,12 +123,6 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         if (rvMembers != null) {
             rvMembers.setAdapter(memberAdapter);
         }
-    }
-    private void loadSessionData() {
-        prefManager = new PreferenceManager(requireContext());
-        userId = Long.parseLong(prefManager.getUserId());
-        messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getRole();
     }
 
     private void setupListeners() {
@@ -160,6 +158,20 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 Mess mess = messDao.getMessByIdAsObject(messId);
+                
+                requireActivity().runOnUiThread(() -> {
+                    if (mess != null) {
+                        tvMessName.setText(mess.getMessName());
+                        tvMessAddress.setText(mess.getMessAddress() != null ? mess.getMessAddress() : "N/A");
+                        tvMessJoinCode.setText(mess.getInvitationCode());
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     private void logout() {
         // Clear preferences
         prefManager.clearSession();
@@ -206,19 +218,5 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         loadUserProfile();
         loadMessInfo();
         loadMembers();
-    }
-}       // Navigate to login
-        Intent intent = new Intent(requireContext(), LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        
-        Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        loadUserProfile();
-        loadMessInfo();
     }
 }
