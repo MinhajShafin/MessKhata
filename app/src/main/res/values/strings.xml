@@ -70,6 +70,9 @@
     <string name="previous_day">Previous Day</string>
     <string name="next_day">Next Day</string>
     <string name="select_date">Select Date</string>
+    <string name="my_meal_preference">My Meal Preference</string>
+    <string name="meal_preference_subtitle">Set your default meal preference for upcoming days</string>
+    <string name="save_preference">Save Preference</string>
 
     <!-- Expenses -->
     <string name="add_expense">Add Expense</string>
