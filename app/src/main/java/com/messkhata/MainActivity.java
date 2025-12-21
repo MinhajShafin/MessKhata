@@ -67,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialize PreferenceManager
+        prefManager = new PreferenceManager(this);
 
         initializeSync();
         setupBottomNavigation();
