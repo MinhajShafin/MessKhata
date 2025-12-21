@@ -96,8 +96,20 @@ public class DashboardFragment extends Fragment {
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        userId = Long.parseLong(prefManager.getUserId());
-        messId = Integer.parseInt(prefManager.getMessId());
+        
+        // Check if session exists
+        String userIdStr = prefManager.getUserId();
+        String messIdStr = prefManager.getMessId();
+        
+        if (userIdStr == null || messIdStr == null) {
+            // Session invalid, redirect to login
+            Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
+            requireActivity().finish();
+            return;
+        }
+        
+        userId = Long.parseLong(userIdStr);
+        messId = Integer.parseInt(messIdStr);
     }
 
     private void setupListeners() {

@@ -111,9 +111,21 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        userId = Long.parseLong(prefManager.getUserId());
-        messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getUserRole();
+        
+        // Check if session exists
+        String userIdStr = prefManager.getUserId();
+        String messIdStr = prefManager.getMessId();
+        String userRoleStr = prefManager.getUserRole();
+        
+        if (userIdStr == null || messIdStr == null) {
+            Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
+            requireActivity().finish();
+            return;
+        }
+        
+        userId = Long.parseLong(userIdStr);
+        messId = Integer.parseInt(messIdStr);
+        userRole = userRoleStr != null ? userRoleStr : "MEMBER";
         
         // Initialize adapter
         boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);

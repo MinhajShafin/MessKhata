@@ -95,8 +95,19 @@ public class ReportFragment extends Fragment {
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getUserRole();
+        
+        // Check if session exists
+        String messIdStr = prefManager.getMessId();
+        String userRoleStr = prefManager.getUserRole();
+        
+        if (messIdStr == null) {
+            Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
+            requireActivity().finish();
+            return;
+        }
+        
+        messId = Integer.parseInt(messIdStr);
+        userRole = userRoleStr != null ? userRoleStr : "MEMBER";
         currentMonth = Calendar.getInstance();
         updateMonthDisplay();
         
