@@ -89,11 +89,11 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
     // SQL for creating Mess table
     private static final String CREATE_MESS_TABLE =
             "CREATE TABLE " + TABLE_MESS + " (" +
-                    "messId INTEGER PRIMARY KEY, " +
+                    "messId INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "messName TEXT NOT NULL, " +
                     "groceryBudgetPerMeal REAL NOT NULL DEFAULT 40.00, " +
                     "cookingChargePerMeal REAL NOT NULL DEFAULT 10.00, " +
-                    "createdDate INTEGER DEFAULT (strftime('%s', 'now')))";
+                    "createdDate INTEGER DEFAULT (strftime('%s', 'now')))");
 
     // SQL for creating Users table
     private static final String CREATE_USERS_TABLE =
