@@ -54,24 +54,11 @@ public class MainActivity extends AppCompatActivity {
 
         String messId = prefManager.getMessId();
         String userId = prefManager.getUserId();
-
-
-
-
-
-
     }
 
     private void setupBottomNavigation() {
         bottomNav = findViewById(R.id.bottomNavigation);
 
-    }
-
-    private void loadFragment(Fragment fragment) {
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragmentContainer, fragment)
-                .commit();
     }
 
     @Override

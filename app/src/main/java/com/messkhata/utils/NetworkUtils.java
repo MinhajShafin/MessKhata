@@ -84,31 +84,5 @@ public class NetworkUtils {
         }
     }
 
-    /**
-     * Returns LiveData to observe network availability changes.
-     */
-    public LiveData<Boolean> getNetworkAvailability() {
-        return isNetworkAvailable;
-    }
 
-    /**
-     * Returns current network availability status.
-     */
-    public boolean isOnline() {
-        Boolean value = isNetworkAvailable.getValue();
-        return value != null && value;
-    }
-
-    /**
-     * Unregister the network callback to prevent memory leaks.
-     * Call this when the app is destroyed.
-     */
-    public void unregister() {
-        if (networkCallback != null) {
-            try {
-                connectivityManager.unregisterNetworkCallback(networkCallback);
-            } catch (Exception ignored) {
-            }
-        }
-    }
 }

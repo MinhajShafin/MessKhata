@@ -22,47 +22,12 @@ public class MessKhataApplication extends Application implements Configuration.P
         instance = this;
 
         MessKhataDatabase.getInstance(this).getWritableDatabase();
-
-        // Create notification channels
-        createNotificationChannels();
     }
 
     public static MessKhataApplication getInstance() {
         return instance;
     }
 
-    private void createNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-
-            // General notifications channel
-            NotificationChannel generalChannel = new NotificationChannel(
-                    Constants.NOTIFICATION_CHANNEL_GENERAL,
-                    "General Notifications",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            generalChannel.setDescription("General app notifications");
-            notificationManager.createNotificationChannel(generalChannel);
-
-            // Reminders channel
-            NotificationChannel remindersChannel = new NotificationChannel(
-                    Constants.NOTIFICATION_CHANNEL_REMINDERS,
-                    "Meal Reminders",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            remindersChannel.setDescription("Daily meal entry reminders");
-            notificationManager.createNotificationChannel(remindersChannel);
-
-            // Sync channel
-            NotificationChannel syncChannel = new NotificationChannel(
-                    Constants.NOTIFICATION_CHANNEL_SYNC,
-                    "Sync Notifications",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            syncChannel.setDescription("Background sync status");
-            notificationManager.createNotificationChannel(syncChannel);
-        }
-    }
 
     @Override
     public Configuration getWorkManagerConfiguration() {
