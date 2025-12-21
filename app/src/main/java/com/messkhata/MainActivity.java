@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Initialize PreferenceManager
-        prefManager = new PreferenceManager(this);
+        prefManager = PreferenceManager.getInstance(this);
 
         initializeSync();
         setupBottomNavigation();

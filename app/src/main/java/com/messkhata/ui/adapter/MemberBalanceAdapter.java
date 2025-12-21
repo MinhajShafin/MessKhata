@@ -54,14 +54,12 @@ public class MemberBalanceAdapter extends RecyclerView.Adapter<MemberBalanceAdap
         private TextView tvMemberName;
         private TextView tvMeals;
         private TextView tvBalance;
-        private TextView tvStatus;
 
         public MemberBalanceViewHolder(@NonNull View itemView) {
             super(itemView);
             tvMemberName = itemView.findViewById(R.id.tvMemberName);
             tvMeals = itemView.findViewById(R.id.tvMeals);
             tvBalance = itemView.findViewById(R.id.tvBalance);
-            tvStatus = itemView.findViewById(R.id.tvStatus);
         }
 
         public void bind(MemberBalance memberBalance) {
@@ -86,31 +84,6 @@ public class MemberBalanceAdapter extends RecyclerView.Adapter<MemberBalanceAdap
                 tvBalance.setTextColor(Color.parseColor("#4CAF50")); // Green for paid
             }
             tvBalance.setText(balanceText);
-
-            // Set payment status
-            String status = memberBalance.getPaymentStatus();
-            tvStatus.setText(status.toUpperCase());
-
-            // Color-code status
-            int statusColor;
-            int statusBgColor;
-            switch (status.toLowerCase()) {
-                case "paid":
-                    statusColor = Color.parseColor("#4CAF50"); // Green
-                    statusBgColor = Color.parseColor("#E8F5E9"); // Light green background
-                    break;
-                case "partial":
-                    statusColor = Color.parseColor("#FF9800"); // Orange
-                    statusBgColor = Color.parseColor("#FFF3E0"); // Light orange background
-                    break;
-                case "pending":
-                default:
-                    statusColor = Color.parseColor("#F44336"); // Red
-                    statusBgColor = Color.parseColor("#FFEBEE"); // Light red background
-                    break;
-            }
-            tvStatus.setTextColor(statusColor);
-            tvStatus.setBackgroundColor(statusBgColor);
         }
     }
 }

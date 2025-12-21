@@ -80,7 +80,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     }
 
     private void loadSessionData() {
-        prefManager = new PreferenceManager(this);
+        prefManager = PreferenceManager.getInstance(this);
         messId = Integer.parseInt(prefManager.getMessId());
         userId = Integer.parseInt(prefManager.getUserId());
     }

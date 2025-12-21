@@ -42,7 +42,6 @@ public class DashboardFragment extends Fragment {
     private TextView tvMemberCount;
     private TextView tvCurrentMealRate;
     private TextView tvTotalMeals;
-    private TextView tvEstimatedBill;
     private TextView tvTotalExpenses;
     private ImageView ivSync;
 
@@ -84,7 +83,6 @@ public class DashboardFragment extends Fragment {
         tvMemberCount = view.findViewById(R.id.tvMemberCount);
         tvCurrentMealRate = view.findViewById(R.id.tvCurrentMealRate);
         tvTotalMeals = view.findViewById(R.id.tvTotalMeals);
-        tvEstimatedBill = view.findViewById(R.id.tvEstimatedBill);
         tvTotalExpenses = view.findViewById(R.id.tvTotalExpenses);
         ivSync = view.findViewById(R.id.ivSync);
     }
@@ -187,7 +185,6 @@ public class DashboardFragment extends Fragment {
         tvMemberCount.setText(String.valueOf(memberCount));
         tvCurrentMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
         tvTotalMeals.setText(String.valueOf(totalMeals));
-        tvEstimatedBill.setText(String.format(Locale.getDefault(), "৳ %.2f", estimatedBill));
         tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpenses));
     }
 
