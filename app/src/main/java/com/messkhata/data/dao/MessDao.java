@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import com.messkhata.data.database.MessKhataDatabase;
+import com.messkhata.data.model.Mess;
 
 public class MessDao {
     
@@ -148,6 +149,65 @@ public class MessDao {
         ContentValues values = new ContentValues();
         values.put("groceryBudgetPerMeal", groceryBudget);
         values.put("cookingChargePerMeal", cookingCharge);
+        
+        int rows = db.update(MessKhataDatabase.TABLE_MESS, 
+                            values, 
+                            "messId = ?", 
+                            new String[]{String.valueOf(messId)});
+        return rows > 0;
+    }
+
+    /**
+     * Get mess by ID as Mess object
+     * @return Mess object or null if not found
+     */
+    public Mess getMessByIdAsObject(int messId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String query = "SELECT * FROM " + MessKhataDatabase.TABLE_MESS + 
+                      " WHERE messId = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(messId)});
+
+        Mess mess = null;
+        if (cursor.moveToFirst()) {
+            mess = new Mess(
+                cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
+                cursor.getString(cursor.getColumnIndexOrThrow("messName")),
+                cursor.getDouble(cursor.getColumnIndexOrThrow("groceryBudgetPerMeal")),
+                cursor.getDouble(cursor.getColumnIndexOrThrow("cookingChargePerMeal")),
+                cursor.getLong(cursor.getColumnIndexOrThrow("createdDate"))
+            );
+        }
+        cursor.close();
+        return mess;
+    }
+
+    /**
+     * Get mess name by ID
+     * @return Mess name or null if not found
+     */
+    public String getMessNameById(int messId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String query = "SELECT messName FROM " + MessKhataDatabase.TABLE_MESS + 
+                      " WHERE messId = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(messId)});
+
+        String messName = null;
+        if (cursor.moveToFirst()) {
+            messName = cursor.getString(0);
+        }
+        cursor.close();
+        return messName;
+    }
+
+    /**
+     * Update mess name
+     * @return true if successful
+     */
+    public boolean updateMessName(int messId, String messName) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        
+        ContentValues values = new ContentValues();
+        values.put("messName", messName);
         
         int rows = db.update(MessKhataDatabase.TABLE_MESS, 
                             values, 

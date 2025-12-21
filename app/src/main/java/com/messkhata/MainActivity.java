@@ -18,6 +18,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.ui.activity.LoginActivity;
 import com.messkhata.ui.activity.MessSetupActivity;
+import com.messkhata.ui.fragment.DashboardFragment;
+import com.messkhata.ui.fragment.ExpenseFragment;
+import com.messkhata.ui.fragment.MealFragment;
+import com.messkhata.ui.fragment.ReportFragment;
+import com.messkhata.ui.fragment.SettingsFragment;
 import com.messkhata.utils.NetworkUtils;
 import com.messkhata.utils.PreferenceManager;
 
@@ -28,6 +33,13 @@ public class MainActivity extends AppCompatActivity {
 
     private PreferenceManager prefManager;
     private BottomNavigationView bottomNav;
+    
+    // Fragment instances (reused to maintain state)
+    private DashboardFragment dashboardFragment;
+    private MealFragment mealFragment;
+    private ExpenseFragment expenseFragment;
+    private ReportFragment reportFragment;
+    private SettingsFragment settingsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +100,47 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupBottomNavigation() {
         bottomNav = findViewById(R.id.bottomNavigation);
-
+        
+        // Initialize fragments (lazy initialization - created once and reused)
+        dashboardFragment = new DashboardFragment();
+        mealFragment = new MealFragment();
+        expenseFragment = new ExpenseFragment();
+        reportFragment = new ReportFragment();
+        settingsFragment = new SettingsFragment();
+        
+        // Load default fragment (Dashboard)
+        loadFragment(dashboardFragment);
+        
+        // Setup navigation item selected listener
+        bottomNav.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            int itemId = item.getItemId();
+            
+            if (itemId == R.id.nav_dashboard) {
+                selectedFragment = dashboardFragment;
+            } else if (itemId == R.id.nav_meals) {
+                selectedFragment = mealFragment;
+            } else if (itemId == R.id.nav_expenses) {
+                selectedFragment = expenseFragment;
+            } else if (itemId == R.id.nav_reports) {
+                selectedFragment = reportFragment;
+            } else if (itemId == R.id.nav_settings) {
+                selectedFragment = settingsFragment;
+            }
+            
+            if (selectedFragment != null) {
+                loadFragment(selectedFragment);
+                return true;
+            }
+            return false;
+        });
+    }
+    
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit();
     }
 
     @Override
