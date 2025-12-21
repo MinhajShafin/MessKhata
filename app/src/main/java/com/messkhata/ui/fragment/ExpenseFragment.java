@@ -99,7 +99,7 @@ public class ExpenseFragment extends Fragment implements ExpenseAdapter.OnExpens
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
         messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getRole();
+        userRole = prefManager.getUserRole();
         currentMonth = Calendar.getInstance();
         updateMonthDisplay();
         
@@ -136,23 +136,29 @@ public class ExpenseFragment extends Fragment implements ExpenseAdapter.OnExpens
     private void loadExpenses() {
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
+                int year = currentMonth.get(Calendar.YEAR);
+                int month = currentMonth.get(Calendar.MONTH) + 1;
+                
+                List<Expense> expenses = expenseDao.getExpensesByMonth(messId, month, year);
+                double totalAmount = 0;
+                if (expenses != null) {
+                    for (Expense expense : expenses) {
+                        totalAmount += expense.getAmount();
+                    }
+                }
+                
+                double finalTotalAmount = totalAmount;
                 requireActivity().runOnUiThread(() -> {
                     expenseList.clear();
                     if (expenses != null) {
                         expenseList.addAll(expenses);
                     }
                     
-                    tvTotalAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", totalAmount));
+                    tvTotalAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", finalTotalAmount));
                     tvExpenseCount.setText(String.valueOf(expenseList.size()));
                     
                     // Update adapter
                     expenseAdapter.updateExpenses(expenseList);
-                }); // For now, showing a simple message
-                    if (expenseList.isEmpty()) {
-                        Toast.makeText(requireContext(), 
-                            "No expenses for this month", 
-                            Toast.LENGTH_SHORT).show();
-                    }
                 });
             } catch (Exception e) {
                 e.printStackTrace();
@@ -164,6 +170,7 @@ public class ExpenseFragment extends Fragment implements ExpenseAdapter.OnExpens
             }
         });
     }
+    
     @Override
     public void onResume() {
         super.onResume();
@@ -181,5 +188,4 @@ public class ExpenseFragment extends Fragment implements ExpenseAdapter.OnExpens
         // TODO: Implement delete expense functionality
         Toast.makeText(requireContext(), "Delete expense: " + expense.getDescription(), Toast.LENGTH_SHORT).show();
     }
-}   }
 }

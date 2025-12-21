@@ -90,19 +90,19 @@ public class ReportFragment extends Fragment {
     }
 
     private void initializeDAO() {
+        reportDao = new ReportDao(requireContext());
+    }
+
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
         messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getRole();
+        userRole = prefManager.getUserRole();
         currentMonth = Calendar.getInstance();
         updateMonthDisplay();
         
         // Initialize adapter
         memberBalanceAdapter = new MemberBalanceAdapter(memberBalances);
         rvMemberBalances.setAdapter(memberBalanceAdapter);
-    }   userRole = prefManager.getRole();
-        currentMonth = Calendar.getInstance();
-        updateMonthDisplay();
     }
 
     private void setupListeners() {
@@ -143,16 +143,14 @@ public class ReportFragment extends Fragment {
                     if (balances != null) {
                         memberBalances.addAll(balances);
                     }
+                    tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpenses));
                     tvTotalMeals.setText(String.valueOf(totalMeals));
                     tvMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
                     
                     // Update adapter
                     memberBalanceAdapter.updateMemberBalances(memberBalances);
-                });     Toast.makeText(requireContext(), 
-                            "No data for this month", 
-                            Toast.LENGTH_SHORT).show();
-                    }
-                }); (Exception e) {
+                });
+            } catch (Exception e) {
                 e.printStackTrace();
                 requireActivity().runOnUiThread(() ->
                     Toast.makeText(requireContext(), 
