@@ -163,7 +163,7 @@ public class AddExpenseActivity extends AppCompatActivity {
         }
 
         // Validate date is not in future
-        if (selectedDate > System.currentTimeMillis() / 1000) {
+        if (selectedDate > System.currentTimeMillis()) {
             Toast.makeText(this, "Date cannot be in the future", Toast.LENGTH_SHORT).show();
             return;
         }
