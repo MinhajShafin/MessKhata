@@ -1,6 +1,7 @@
 package com.messkhata;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.ui.activity.LoginActivity;
+import com.messkhata.ui.activity.MessSetupActivity;
 import com.messkhata.utils.NetworkUtils;
 import com.messkhata.utils.PreferenceManager;
 
@@ -30,6 +32,32 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Check if user is logged in
+        SharedPreferences prefs = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
+        boolean isLoggedIn = prefs.getBoolean("isLoggedIn", false);
+
+        if (!isLoggedIn) {
+            // Not logged in - redirect to login
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        // Check if user has mess
+        int messId = prefs.getInt("messId", -1);
+        if (messId == -1) {
+            // User logged in but no mess - redirect to setup
+            Intent intent = new Intent(this, MessSetupActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        // User is authenticated and has mess - continue
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
@@ -77,7 +105,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logout() {
-
+        // Clear session data
+        SharedPreferences prefs = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.clear();
+        editor.apply();
 
         MessKhataDatabase database = MessKhataDatabase.getInstance(this);
         // Navigate to login

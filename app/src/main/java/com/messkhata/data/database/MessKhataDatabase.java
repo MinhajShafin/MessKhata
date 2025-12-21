@@ -11,13 +11,14 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
 
     // Database Info
     private static final String DATABASE_NAME = "MessManager.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Table Names
     public static final String TABLE_USERS = "Users";
     public static final String TABLE_MESS = "Mess";
     public static final String TABLE_EXPENSES = "Expenses";
     public static final String TABLE_MEALS = "Meals";
+    public static final String TABLE_MEAL_PREFERENCES = "MealPreferences";
     public static final String TABLE_MONTHLY_STATS = "MessMonthlyStats";
     public static final String TABLE_MONTHLY_BILLS = "MonthlyBills";
     public static final String TABLE_PAYMENTS = "Payments";
@@ -50,6 +51,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
         db.execSQL(CREATE_USERS_TABLE);
         db.execSQL(CREATE_EXPENSES_TABLE);
         db.execSQL(CREATE_MEALS_TABLE);
+        db.execSQL(CREATE_MEAL_PREFERENCES_TABLE);
         db.execSQL(CREATE_MONTHLY_STATS_TABLE);
         db.execSQL(CREATE_MONTHLY_BILLS_TABLE);
         db.execSQL(CREATE_PAYMENTS_TABLE);
@@ -61,6 +63,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_PAYMENTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MONTHLY_BILLS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MONTHLY_STATS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEAL_PREFERENCES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEALS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EXPENSES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
@@ -76,6 +79,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
         db.execSQL("DELETE FROM " + TABLE_PAYMENTS);
         db.execSQL("DELETE FROM " + TABLE_MONTHLY_BILLS);
         db.execSQL("DELETE FROM " + TABLE_MONTHLY_STATS);
+        db.execSQL("DELETE FROM " + TABLE_MEAL_PREFERENCES);
         db.execSQL("DELETE FROM " + TABLE_MEALS);
         db.execSQL("DELETE FROM " + TABLE_EXPENSES);
         db.execSQL("DELETE FROM " + TABLE_USERS);
@@ -146,6 +150,8 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "totalGrocery REAL DEFAULT 0.00, " +
                     "totalUtilities REAL DEFAULT 0.00, " +
                     "totalCleaning REAL DEFAULT 0.00, " +
+                    "totalGas REAL DEFAULT 0.00, " +
+                    "totalRent REAL DEFAULT 0.00, " +
                     "totalMiscellaneous REAL DEFAULT 0.00, " +
                     "totalMeals INTEGER DEFAULT 0, " +
                     "numberOfMembers INTEGER NOT NULL, " +
@@ -154,7 +160,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "finalizedDate INTEGER, " +
                     "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
-                    "UNIQUE(messId, month, year))";
+                    "UNIQUE(messId, month, year)");
 
     // SQL for creating MonthlyBills table
     private static final String CREATE_MONTHLY_BILLS_TABLE =
@@ -168,6 +174,8 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "mealRate REAL NOT NULL, " +
                     "utilitiesShare REAL DEFAULT 0.00, " +
                     "cleaningShare REAL DEFAULT 0.00, " +
+                    "gasShare REAL DEFAULT 0.00, " +
+                    "rentShare REAL DEFAULT 0.00, " +
                     "miscShare REAL DEFAULT 0.00, " +
                     "totalPaid REAL DEFAULT 0.00, " +
                     "status TEXT DEFAULT 'pending', " +
@@ -176,7 +184,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "updatedAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
-                    "UNIQUE(userId, messId, month, year))";
+                    "UNIQUE(userId, messId, month, year)");
 
     // SQL for creating Payments table
     private static final String CREATE_PAYMENTS_TABLE =
@@ -195,4 +203,18 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
                     "FOREIGN KEY (addedBy) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE)";
+
+    // SQL for creating MealPreferences table
+    private static final String CREATE_MEAL_PREFERENCES_TABLE =
+            "CREATE TABLE " + TABLE_MEAL_PREFERENCES + " (" +
+                    "preferenceId INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "userId INTEGER NOT NULL, " +
+                    "messId INTEGER NOT NULL, " +
+                    "breakfast INTEGER DEFAULT 1, " +
+                    "lunch INTEGER DEFAULT 1, " +
+                    "dinner INTEGER DEFAULT 1, " +
+                    "effectiveFrom INTEGER NOT NULL, " +
+                    "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
+                    "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +
+                    "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE)";
 }

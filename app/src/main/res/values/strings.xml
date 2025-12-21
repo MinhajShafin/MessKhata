@@ -30,7 +30,7 @@
     <string name="join_mess_description">Enter the code shared by your mess admin</string>
     <string name="hint_mess_name">Mess Name</string>
     <string name="hint_mess_address">Address (Optional)</string>
-    <string name="hint_join_code">Enter 8-digit Code</string>
+    <string name="hint_join_code">Enter 4-digit Code</string>
     <string name="btn_create_mess">Create Mess</string>
     <string name="btn_join_mess">Join Mess</string>
 

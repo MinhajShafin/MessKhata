@@ -142,4 +142,40 @@ public class UserDao {
                 new String[]{String.valueOf(userId)});
         return rows > 0;
     }
+
+    /**
+     * Get user's mess ID
+     * @return messId if user has mess, -1 if no mess
+     */
+    public int getUserMessId(long userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT messId FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE userId = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
+
+        int messId = -1;
+        if (cursor.moveToFirst()) {
+            if (!cursor.isNull(0)) {
+                messId = cursor.getInt(0);
+            }
+        }
+        cursor.close();
+        return messId;
+    }
+
+    /**
+     * Get user's complete info including mess details
+     * Note: invitationCode is calculated from messId (messId + 999)
+     */
+    public Cursor getUserWithMess(long userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT u.*, m.messName " +
+                "FROM " + MessKhataDatabase.TABLE_USERS + " u " +
+                "LEFT JOIN " + MessKhataDatabase.TABLE_MESS + " m " +
+                "ON u.messId = m.messId " +
+                "WHERE u.userId = ?";
+        return db.rawQuery(query, new String[]{String.valueOf(userId)});
+    }
 }

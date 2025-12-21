@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.messkhata.MainActivity;
 import com.messkhata.R;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
@@ -95,15 +96,25 @@ public class LoginActivity extends AppCompatActivity {
                 showLoading(false);
 
                 if (userId != -1) {
-                    // Login successful - save user session
-                    saveUserSession(userId, email);
+                    // Check if user already has a mess
+                    int messId = userDao.getUserMessId(userId);
+
+                    // Save user session with mess info
+                    saveUserSession(userId, email, messId);
 
                     Toast.makeText(LoginActivity.this,
                             "Login successful!",
                             Toast.LENGTH_SHORT).show();
 
-                    // Navigate to MessSetupActivity
-                    Intent intent = new Intent(LoginActivity.this, MessSetupActivity.class);
+                    Intent intent;
+                    if (messId != -1) {
+                        // User already in mess - go to MainActivity
+                        intent = new Intent(LoginActivity.this, MainActivity.class);
+                    } else {
+                        // User needs to create/join mess
+                        intent = new Intent(LoginActivity.this, MessSetupActivity.class);
+                    }
+
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
@@ -116,10 +127,11 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void saveUserSession(long userId, String email) {
+    private void saveUserSession(long userId, String email, int messId) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putLong("userId", userId);
         editor.putString("userEmail", email);
+        editor.putInt("messId", messId);
         editor.putBoolean("isLoggedIn", true);
         editor.apply();
     }
