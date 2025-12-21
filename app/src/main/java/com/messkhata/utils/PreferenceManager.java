@@ -67,5 +67,20 @@ public class PreferenceManager {
         return preferences.getString(Constants.PREF_MESS_ID, null);
     }
 
+    public String getUserRole() {
+        return preferences.getString(Constants.PREF_USER_ROLE, null);
+    }
+
+    public String getUserName() {
+        return preferences.getString(Constants.PREF_USER_NAME, null);
+    }
+
+    public String getUserEmail() {
+        return preferences.getString(Constants.PREF_USER_EMAIL, null);
+    }
+
+    public boolean isLoggedIn() {
+        return preferences.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
+    }
 
 }

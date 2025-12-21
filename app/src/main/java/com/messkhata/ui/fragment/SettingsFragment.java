@@ -40,7 +40,6 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     
     // UI Components - Mess Info
     private TextView tvMessName;
-    private TextView tvMessAddress;
     private TextView tvMessJoinCode;
     private View cardMemberManagement;
     private RecyclerView rvMembers;
@@ -92,7 +91,6 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         
         // Mess info
         tvMessName = view.findViewById(R.id.tvMessName);
-        tvMessAddress = view.findViewById(R.id.tvMessAddress);
         tvMessJoinCode = view.findViewById(R.id.tvMessJoinCode);
         cardMemberManagement = view.findViewById(R.id.cardMemberManagement);
         rvMembers = view.findViewById(R.id.rvMembers);
@@ -115,7 +113,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         prefManager = new PreferenceManager(requireContext());
         userId = Long.parseLong(prefManager.getUserId());
         messId = Integer.parseInt(prefManager.getMessId());
-        userRole = prefManager.getRole();
+        userRole = prefManager.getUserRole();
         
         // Initialize adapter
         boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);
@@ -136,7 +134,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
                 
                 requireActivity().runOnUiThread(() -> {
                     if (user != null) {
-                        tvUserName.setText(user.getName());
+                        tvUserName.setText(user.getFullName());
                         tvUserEmail.setText(user.getEmail());
                         tvUserRole.setText(user.getRole());
                         
@@ -162,7 +160,6 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
                 requireActivity().runOnUiThread(() -> {
                     if (mess != null) {
                         tvMessName.setText(mess.getMessName());
-                        tvMessAddress.setText(mess.getMessAddress() != null ? mess.getMessAddress() : "N/A");
                         tvMessJoinCode.setText(mess.getInvitationCode());
                     }
                 });
