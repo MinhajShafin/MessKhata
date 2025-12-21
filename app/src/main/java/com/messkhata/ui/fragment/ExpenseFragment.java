@@ -145,6 +145,11 @@ public class ExpenseFragment extends Fragment implements ExpenseAdapter.OnExpens
     }
 
     private void loadExpenses() {
+        // Check if views are initialized
+        if (tvTotalAmount == null || tvExpenseCount == null || expenseAdapter == null) {
+            return;
+        }
+        
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 int year = currentMonth.get(Calendar.YEAR);

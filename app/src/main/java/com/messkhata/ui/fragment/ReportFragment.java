@@ -150,6 +150,11 @@ public class ReportFragment extends Fragment {
     }
 
     private void loadReport() {
+        // Check if views are initialized
+        if (tvTotalExpenses == null || tvTotalMeals == null || memberBalanceAdapter == null) {
+            return;
+        }
+        
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 int year = currentMonth.get(Calendar.YEAR);

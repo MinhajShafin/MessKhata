@@ -118,6 +118,11 @@ public class DashboardFragment extends Fragment {
     }
 
     private void loadDashboardData() {
+        // Check if views are initialized
+        if (swipeRefresh == null || tvUserName == null) {
+            return;
+        }
+        
         swipeRefresh.setRefreshing(true);
 
         // Load data in background thread
