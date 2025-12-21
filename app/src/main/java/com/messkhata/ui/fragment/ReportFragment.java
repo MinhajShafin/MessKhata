@@ -41,6 +41,13 @@ public class ReportFragment extends Fragment {
     private ImageButton btnNextMonth;
     private RecyclerView rvMemberBalances;
     
+    // Expense breakdown TextViews
+    private TextView tvGroceryAmount;
+    private TextView tvUtilityAmount;
+    private TextView tvGasAmount;
+    private TextView tvRentAmount;
+    private TextView tvOtherAmount;
+    
     // Adapter
     private MemberBalanceAdapter memberBalanceAdapter;
     
@@ -84,6 +91,13 @@ public class ReportFragment extends Fragment {
         btnPrevMonth = view.findViewById(R.id.btnPrevMonth);
         btnNextMonth = view.findViewById(R.id.btnNextMonth);
         rvMemberBalances = view.findViewById(R.id.rvBalances);
+        
+        // Expense breakdown TextViews
+        tvGroceryAmount = view.findViewById(R.id.tvGroceryAmount);
+        tvUtilityAmount = view.findViewById(R.id.tvUtilityAmount);
+        tvGasAmount = view.findViewById(R.id.tvGasAmount);
+        tvRentAmount = view.findViewById(R.id.tvRentAmount);
+        tvOtherAmount = view.findViewById(R.id.tvOtherAmount);
         
         // Setup RecyclerView
         rvMemberBalances.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -149,6 +163,15 @@ public class ReportFragment extends Fragment {
                 int totalMeals = reportDao.getTotalMeals(messId, year, month);
                 double mealRate = reportDao.calculateMealRate(messId, year, month);
                 
+                // Load expense breakdown by category
+                double groceryAmount = reportDao.getExpenseByCategory(messId, "Grocery", month, year);
+                double utilityAmount = reportDao.getExpenseByCategory(messId, "Utility", month, year);
+                double gasAmount = reportDao.getExpenseByCategory(messId, "Gas", month, year);
+                double rentAmount = reportDao.getExpenseByCategory(messId, "Rent", month, year);
+                double maintenanceAmount = reportDao.getExpenseByCategory(messId, "Maintenance", month, year);
+                double otherAmount = reportDao.getExpenseByCategory(messId, "Other", month, year);
+                double totalOtherAmount = maintenanceAmount + otherAmount;
+                
                 requireActivity().runOnUiThread(() -> {
                     memberBalances.clear();
                     if (balances != null) {
@@ -157,6 +180,13 @@ public class ReportFragment extends Fragment {
                     tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpenses));
                     tvTotalMeals.setText(String.valueOf(totalMeals));
                     tvMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
+                    
+                    // Update expense breakdown
+                    tvGroceryAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", groceryAmount));
+                    tvUtilityAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", utilityAmount));
+                    tvGasAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", gasAmount));
+                    tvRentAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", rentAmount));
+                    tvOtherAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", totalOtherAmount));
                     
                     // Update adapter
                     memberBalanceAdapter.updateMemberBalances(memberBalances);

@@ -269,4 +269,13 @@ public class ReportDao {
         breakdown[5] = expenseDao.getTotalExpenseByCategory(messId, "miscellaneous", month, year);
         return breakdown;
     }
+    
+    /**
+     * Get total expenses for a specific category
+     * @param category Category name (matches exactly as stored)
+     * @return Total amount for the category
+     */
+    public double getExpenseByCategory(int messId, String category, int month, int year) {
+        return expenseDao.getTotalExpenseByCategory(messId, category, month, year);
+    }
 }
