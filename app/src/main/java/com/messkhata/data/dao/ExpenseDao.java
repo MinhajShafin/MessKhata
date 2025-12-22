@@ -361,46 +361,24 @@ public class ExpenseDao {
     }
 
     /**
-     * Get accurate user share of cumulative expenses from join date to current date
+     * Get accurate user share of all expenses
      * Uses memberCountAtTime stored with each expense for precise calculation
+     * Shows ALL expenses regardless of join date (user pays their share of all mess expenses)
      * @param messId The mess ID
-     * @param userJoinDate User's join date in seconds (Unix timestamp)
-     * @return User's share of expenses since join date
+     * @param userJoinDate User's join date in seconds (Unix timestamp) - NOT USED, shows all expenses
+     * @return User's share of all expenses
      */
     public double getAccurateUserShareOfExpenses(int messId, long userJoinDate) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        long currentDate = System.currentTimeMillis() / 1000;
-
-        android.util.Log.d("ExpenseDaoDebug", "=== getAccurateUserShareOfExpenses ===");
-        android.util.Log.d("ExpenseDaoDebug", "messId: " + messId);
-        android.util.Log.d("ExpenseDaoDebug", "userJoinDate: " + userJoinDate);
-        android.util.Log.d("ExpenseDaoDebug", "currentDate: " + currentDate);
-
-        // First, get ALL expenses to see what we have
-        String debugQuery = "SELECT expenseId, expenseDate, amount, memberCountAtTime FROM " +
-                MessKhataDatabase.TABLE_EXPENSES +
-                " WHERE messId = ?";
-        Cursor debugCursor = db.rawQuery(debugQuery, new String[]{String.valueOf(messId)});
-        android.util.Log.d("ExpenseDaoDebug", "Total expenses in DB: " + debugCursor.getCount());
-        while (debugCursor.moveToNext()) {
-            long expenseDate = debugCursor.getLong(1);
-            double amount = debugCursor.getDouble(2);
-            int memberCount = debugCursor.getInt(3);
-            android.util.Log.d("ExpenseDaoDebug", "  Expense: date=" + expenseDate + ", amount=" + amount +
-                    ", members=" + memberCount + ", inRange=" + (expenseDate >= userJoinDate && expenseDate <= currentDate));
-        }
-        debugCursor.close();
-
-        // Get all expenses since user joined with their memberCountAtTime
+        // Get ALL expenses for the mess with their memberCountAtTime
+        // Each user pays their share based on member count when expense was created
         String query = "SELECT amount, memberCountAtTime FROM " + 
                 MessKhataDatabase.TABLE_EXPENSES +
-                " WHERE messId = ? AND expenseDate >= ? AND expenseDate <= ?";
+                " WHERE messId = ?";
 
         Cursor cursor = db.rawQuery(query, new String[]{
-            String.valueOf(messId),
-            String.valueOf(userJoinDate),
-            String.valueOf(currentDate)
+            String.valueOf(messId)
         });
 
         double userShare = 0.0;
@@ -413,7 +391,6 @@ public class ExpenseDao {
                 userShare += (amount / memberCount);
             }
         }
-        android.util.Log.d("ExpenseDaoDebug", "Result: " + userShare);
         cursor.close();
         return userShare;
     }

@@ -306,49 +306,26 @@ public class MealDao {
      * Get cumulative meal expense from user's join date to current date
      * Used for dashboard to show all meal expenses since user joined
      * @param userId The user ID
-     * @param userJoinDate User's join date in seconds (Unix timestamp)
-     * @return Total meal expense since join date
+     * @param userJoinDate User's join date in seconds (Unix timestamp) - NOT USED, shows all meals
+     * @return Total meal expense for all user's meals
      */
     public double getCumulativeMealExpenseFromJoinDate(int userId, long userJoinDate) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        long currentDate = System.currentTimeMillis() / 1000;
-
-        android.util.Log.d("MealDaoDebug", "=== getCumulativeMealExpenseFromJoinDate ===");
-        android.util.Log.d("MealDaoDebug", "userId: " + userId);
-        android.util.Log.d("MealDaoDebug", "userJoinDate: " + userJoinDate);
-        android.util.Log.d("MealDaoDebug", "currentDate: " + currentDate);
-
-        // First, get ALL meals for this user to see what we have
-        String debugQuery = "SELECT mealId, mealDate, breakfast, lunch, dinner, mealRate FROM " +
-                MessKhataDatabase.TABLE_MEALS +
-                " WHERE userId = ?";
-        Cursor debugCursor = db.rawQuery(debugQuery, new String[]{String.valueOf(userId)});
-        android.util.Log.d("MealDaoDebug", "Total meals in DB for user: " + debugCursor.getCount());
-        while (debugCursor.moveToNext()) {
-            long mealDate = debugCursor.getLong(1);
-            int meals = debugCursor.getInt(2) + debugCursor.getInt(3) + debugCursor.getInt(4);
-            double rate = debugCursor.getDouble(5);
-            android.util.Log.d("MealDaoDebug", "  Meal: date=" + mealDate + ", count=" + meals + 
-                    ", rate=" + rate + ", inRange=" + (mealDate >= userJoinDate && mealDate <= currentDate));
-        }
-        debugCursor.close();
-
+        // Show ALL user's meals regardless of join date
+        // Personal meals belong to the user from when they were added
         String query = "SELECT SUM((breakfast + lunch + dinner) * mealRate) as totalExpense FROM " +
                 MessKhataDatabase.TABLE_MEALS +
-                " WHERE userId = ? AND mealDate >= ? AND mealDate <= ?";
+                " WHERE userId = ?";
 
         Cursor cursor = db.rawQuery(query, new String[]{
-                String.valueOf(userId),
-                String.valueOf(userJoinDate),
-                String.valueOf(currentDate)
+                String.valueOf(userId)
         });
 
         double totalExpense = 0.0;
-        if (cursor.moveToFirst()) {
-            totalExpense = cursor.getDouble(cursor.getColumnIndexOrThrow("totalExpense"));
+        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            totalExpense = cursor.getDouble(0);
         }
-        android.util.Log.d("MealDaoDebug", "Result: " + totalExpense);
         cursor.close();
         return totalExpense;
     }
