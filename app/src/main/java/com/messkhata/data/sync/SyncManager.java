@@ -463,6 +463,16 @@ public class SyncManager {
      * Sync a single user immediately (used when joining/creating mess)
      */
     public void syncUserImmediate(User user) {
+        syncUserImmediate(user, null);
+    }
+
+    /**
+     * Sync a single user immediately with firebaseMessId
+     * 
+     * @param user           The user to sync
+     * @param firebaseMessId The Firebase document ID of the mess (optional)
+     */
+    public void syncUserImmediate(User user, String firebaseMessId) {
         if (!isNetworkAvailable() || !isAuthenticated()) {
             return;
         }
@@ -471,6 +481,11 @@ public class SyncManager {
             try {
                 SyncableUser syncableUser = new SyncableUser(user);
                 syncableUser.setLastModified(System.currentTimeMillis());
+
+                // Set firebaseMessId if provided
+                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                    syncableUser.setFirebaseMessId(firebaseMessId);
+                }
 
                 Task<DocumentReference> task = firebaseRepo.saveUser(syncableUser);
                 Tasks.await(task);

@@ -1,5 +1,6 @@
 package com.messkhata.ui.fragment;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -22,8 +23,10 @@ import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Mess;
 import com.messkhata.data.model.User;
 import com.messkhata.data.sync.FirebaseAuthHelper;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.data.sync.SyncWorker;
 import com.messkhata.ui.activity.LoginActivity;
+import com.messkhata.ui.activity.MessSetupActivity;
 import com.messkhata.ui.adapter.MemberAdapter;
 import com.messkhata.utils.PreferenceManager;
 
@@ -48,6 +51,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
     // UI Components - Actions
     private MaterialButton btnLogout;
+    private MaterialButton btnLeaveMess;
 
     // Adapter
     private MemberAdapter memberAdapter;
@@ -55,6 +59,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     // DAOs
     private UserDao userDao;
     private MessDao messDao;
+    private SyncManager syncManager;
 
     // Session data
     private PreferenceManager prefManager;
@@ -104,11 +109,13 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
         // Actions
         btnLogout = view.findViewById(R.id.btnLogout);
+        btnLeaveMess = view.findViewById(R.id.btnLeaveMess);
     }
 
     private void initializeDAOs() {
         userDao = new UserDao(requireContext());
         messDao = new MessDao(requireContext());
+        syncManager = SyncManager.getInstance(requireContext());
     }
 
     private void loadSessionData() {
@@ -139,6 +146,62 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
     private void setupListeners() {
         btnLogout.setOnClickListener(v -> logout());
+
+        if (btnLeaveMess != null) {
+            btnLeaveMess.setOnClickListener(v -> showLeaveMessConfirmation());
+        }
+    }
+
+    private void showLeaveMessConfirmation() {
+        // Check if user is admin
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
+            // Admins cannot leave - they need to transfer ownership or delete the mess
+            Toast.makeText(requireContext(),
+                    "As an admin, you cannot leave the mess. Transfer ownership first or delete the mess.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.leave_mess)
+                .setMessage(R.string.leave_mess_confirm)
+                .setPositiveButton("Leave", (dialog, which) -> leaveMess())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void leaveMess() {
+        MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                // Update user's messId to -1 (no mess)
+                userDao.updateUserMessId(userId, -1);
+                userDao.updateUserRole(userId, "member");
+
+                // Get updated user and sync to Firebase
+                User user = userDao.getUserByIdAsObject((int) userId);
+                if (user != null) {
+                    syncManager.syncUserImmediate(user);
+                }
+
+                requireActivity().runOnUiThread(() -> {
+                    // Clear mess from session but keep user logged in
+                    prefManager.clearMessSession();
+
+                    Toast.makeText(requireContext(), "You have left the mess", Toast.LENGTH_SHORT).show();
+
+                    // Navigate to MessSetupActivity
+                    Intent intent = new Intent(requireContext(), MessSetupActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Failed to leave mess: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void loadUserProfile() {

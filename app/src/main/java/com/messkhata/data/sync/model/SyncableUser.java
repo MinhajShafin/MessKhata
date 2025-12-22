@@ -15,6 +15,7 @@ public class SyncableUser extends User implements SyncableEntity {
     public static final String COLLECTION_NAME = "users";
 
     private String firebaseId;
+    private String firebaseMessId; // Firebase document ID of the mess
     private SyncStatus syncStatus = SyncStatus.PENDING_UPLOAD;
     private long lastModified;
 
@@ -64,6 +65,14 @@ public class SyncableUser extends User implements SyncableEntity {
         this.lastModified = timestamp;
     }
 
+    public String getFirebaseMessId() {
+        return firebaseMessId;
+    }
+
+    public void setFirebaseMessId(String firebaseMessId) {
+        this.firebaseMessId = firebaseMessId;
+    }
+
     @Override
     public Map<String, Object> toFirebaseMap() {
         Map<String, Object> map = new HashMap<>();
@@ -72,6 +81,7 @@ public class SyncableUser extends User implements SyncableEntity {
         map.put("email", getEmail());
         map.put("phoneNumber", getPhoneNumber());
         map.put("messId", getMessId());
+        map.put("firebaseMessId", firebaseMessId); // Add firebaseMessId
         map.put("role", getRole());
         map.put("joinedDate", getJoinedDate());
         map.put("lastModified", lastModified);
@@ -113,6 +123,9 @@ public class SyncableUser extends User implements SyncableEntity {
         }
         if (data.containsKey("lastModified")) {
             user.setLastModified(((Number) data.get("lastModified")).longValue());
+        }
+        if (data.containsKey("firebaseMessId")) {
+            user.setFirebaseMessId((String) data.get("firebaseMessId"));
         }
 
         user.setSyncStatus(SyncStatus.SYNCED);
