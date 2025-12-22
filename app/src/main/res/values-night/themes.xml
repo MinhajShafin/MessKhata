@@ -1,6 +1,0 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme - Same as default since we're dark only -->
-    <style name="Base.Theme.MessKhata" parent="Theme.Material3.Dark.NoActionBar">
-        <!-- Same as values/themes.xml - dark only app -->
-    </style>
-</resources>
