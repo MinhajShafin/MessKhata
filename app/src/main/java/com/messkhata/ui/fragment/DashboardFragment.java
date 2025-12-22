@@ -148,16 +148,24 @@ public class DashboardFragment extends Fragment {
                 // Get user's joined date
                 long userJoinDate = user != null ? user.getJoinedDate() : 0;
                 
+                // Debug logging
+                android.util.Log.d("DashboardDebug", "User ID: " + userId);
+                android.util.Log.d("DashboardDebug", "User Join Date (seconds): " + userJoinDate);
+                android.util.Log.d("DashboardDebug", "Current Time (seconds): " + (System.currentTimeMillis() / 1000));
+                
                 // ===== ACCURATE CUMULATIVE CALCULATION =====
                 // Get cumulative meal expense (all meals since user joined)
                 double cumulativeMealExpense = mealDao.getCumulativeMealExpenseFromJoinDate((int) userId, userJoinDate);
+                android.util.Log.d("DashboardDebug", "Cumulative Meal Expense: " + cumulativeMealExpense);
                 
                 // Get accurate user share of cumulative expenses using memberCountAtTime
                 // Each expense is divided by the member count when it was created
                 double userSharedExpense = expenseDao.getAccurateUserShareOfExpenses(messId, userJoinDate);
+                android.util.Log.d("DashboardDebug", "User Shared Expense: " + userSharedExpense);
                 
                 // Calculate total cumulative expense (meal + accurate shared)
                 double totalExpense = cumulativeMealExpense + userSharedExpense;
+                android.util.Log.d("DashboardDebug", "Total Expense: " + totalExpense);
                 
                 // Get member count
                 List<User> members = userDao.getMembersByMessId(messId);
