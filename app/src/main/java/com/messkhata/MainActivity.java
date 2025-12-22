@@ -1,7 +1,6 @@
 package com.messkhata;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +15,8 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.messkhata.data.database.MessKhataDatabase;
+import com.messkhata.data.sync.FirebaseAuthHelper;
+import com.messkhata.data.sync.SyncWorker;
 import com.messkhata.ui.activity.LoginActivity;
 import com.messkhata.ui.activity.MessSetupActivity;
 import com.messkhata.ui.fragment.DashboardFragment;
@@ -33,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     private PreferenceManager prefManager;
     private BottomNavigationView bottomNav;
-    
+
     // Fragment instances (reused to maintain state)
     private DashboardFragment dashboardFragment;
     private MealFragment mealFragment;
@@ -45,11 +46,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Check if user is logged in
-        SharedPreferences prefs = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
-        boolean isLoggedIn = prefs.getBoolean("isLoggedIn", false);
+        // Initialize PreferenceManager first
+        prefManager = PreferenceManager.getInstance(this);
 
-        if (!isLoggedIn) {
+        // Check if user is logged in using PreferenceManager
+        if (!prefManager.isLoggedIn()) {
             // Not logged in - redirect to login
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -59,8 +60,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Check if user has mess
-        int messId = prefs.getInt("messId", -1);
-        if (messId == -1) {
+        String messIdStr = prefManager.getMessId();
+        int messId = -1;
+        if (messIdStr != null && !messIdStr.isEmpty()) {
+            try {
+                messId = Integer.parseInt(messIdStr);
+            } catch (NumberFormatException e) {
+                messId = -1;
+            }
+        }
+
+        if (messId <= 0) {
             // User logged in but no mess - redirect to setup
             Intent intent = new Intent(this, MessSetupActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -100,22 +110,22 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupBottomNavigation() {
         bottomNav = findViewById(R.id.bottomNavigation);
-        
+
         // Initialize fragments (lazy initialization - created once and reused)
         dashboardFragment = new DashboardFragment();
         mealFragment = new MealFragment();
         expenseFragment = new ExpenseFragment();
         reportFragment = new ReportFragment();
         settingsFragment = new SettingsFragment();
-        
+
         // Load default fragment (Dashboard)
         loadFragment(dashboardFragment);
-        
+
         // Setup navigation item selected listener
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
-            
+
             if (itemId == R.id.nav_dashboard) {
                 selectedFragment = dashboardFragment;
             } else if (itemId == R.id.nav_meals) {
@@ -127,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_settings) {
                 selectedFragment = settingsFragment;
             }
-            
+
             if (selectedFragment != null) {
                 loadFragment(selectedFragment);
                 return true;
@@ -135,12 +145,12 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
     }
-    
+
     private void loadFragment(Fragment fragment) {
         getSupportFragmentManager()
-            .beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit();
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .commit();
     }
 
     @Override
@@ -159,13 +169,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        // Clear session data
-        SharedPreferences prefs = getSharedPreferences("MessKhataPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.clear();
-        editor.apply();
+        // Sign out from Firebase
+        FirebaseAuthHelper.getInstance().signOut();
 
-        MessKhataDatabase database = MessKhataDatabase.getInstance(this);
+        // Cancel background sync
+        SyncWorker.cancelPeriodicSync(this);
+
+        // Clear session data using PreferenceManager
+        prefManager.clearSession();
+
         // Navigate to login
         navigateToLogin();
     }

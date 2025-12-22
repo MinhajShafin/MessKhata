@@ -21,6 +21,8 @@ import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Mess;
 import com.messkhata.data.model.User;
+import com.messkhata.data.sync.FirebaseAuthHelper;
+import com.messkhata.data.sync.SyncWorker;
 import com.messkhata.ui.activity.LoginActivity;
 import com.messkhata.ui.adapter.MemberAdapter;
 import com.messkhata.utils.PreferenceManager;
@@ -37,36 +39,36 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     private TextView tvUserName;
     private TextView tvUserEmail;
     private TextView tvUserRole;
-    
+
     // UI Components - Mess Info
     private TextView tvMessName;
     private TextView tvMessJoinCode;
     private View cardMemberManagement;
     private RecyclerView rvMembers;
-    
+
     // UI Components - Actions
     private MaterialButton btnLogout;
-    
+
     // Adapter
     private MemberAdapter memberAdapter;
-    
+
     // DAOs
     private UserDao userDao;
     private MessDao messDao;
-    
+
     // Session data
     private PreferenceManager prefManager;
     private long userId;
     private int messId;
     private String userRole;
-    
+
     // Member list
     private List<User> memberList = new ArrayList<>();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_settings, container, false);
     }
 
@@ -88,18 +90,18 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         tvUserName = view.findViewById(R.id.tvUserName);
         tvUserEmail = view.findViewById(R.id.tvUserEmail);
         tvUserRole = view.findViewById(R.id.tvUserRole);
-        
+
         // Mess info
         tvMessName = view.findViewById(R.id.tvMessName);
         tvMessJoinCode = view.findViewById(R.id.tvMessJoinCode);
         cardMemberManagement = view.findViewById(R.id.cardMemberManagement);
         rvMembers = view.findViewById(R.id.rvMembers);
-        
+
         // Setup RecyclerView
         if (rvMembers != null) {
             rvMembers.setLayoutManager(new LinearLayoutManager(requireContext()));
         }
-        
+
         // Actions
         btnLogout = view.findViewById(R.id.btnLogout);
     }
@@ -111,22 +113,22 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        
+
         // Check if session exists
         String userIdStr = prefManager.getUserId();
         String messIdStr = prefManager.getMessId();
         String userRoleStr = prefManager.getUserRole();
-        
+
         if (userIdStr == null || messIdStr == null) {
             Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             requireActivity().finish();
             return;
         }
-        
+
         userId = Long.parseLong(userIdStr);
         messId = Integer.parseInt(messIdStr);
         userRole = userRoleStr != null ? userRoleStr : "MEMBER";
-        
+
         // Initialize adapter
         boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);
         memberAdapter = new MemberAdapter(memberList, isAdmin, this);
@@ -143,13 +145,13 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 User user = userDao.getUserByIdAsObject((int) userId);
-                
+
                 requireActivity().runOnUiThread(() -> {
                     if (user != null) {
                         tvUserName.setText(user.getFullName());
                         tvUserEmail.setText(user.getEmail());
                         tvUserRole.setText(user.getRole());
-                        
+
                         // Show/hide admin settings based on role
                         if ("ADMIN".equals(user.getRole())) {
                             cardMemberManagement.setVisibility(View.VISIBLE);
@@ -168,7 +170,7 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 Mess mess = messDao.getMessByIdAsObject(messId);
-                
+
                 requireActivity().runOnUiThread(() -> {
                     if (mess != null) {
                         tvMessName.setText(mess.getMessName());
@@ -182,14 +184,20 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     }
 
     private void logout() {
+        // Sign out from Firebase
+        FirebaseAuthHelper.getInstance().signOut();
+
+        // Cancel background sync
+        SyncWorker.cancelPeriodicSync(requireContext());
+
         // Clear preferences
         prefManager.clearSession();
-        
+
         // Navigate to login
         Intent intent = new Intent(requireContext(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-        
+
         Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
     }
 
@@ -197,11 +205,11 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         if (!"ADMIN".equalsIgnoreCase(userRole)) {
             return; // Only admins can see member list
         }
-        
+
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 List<User> members = userDao.getMembersByMessId(messId);
-                
+
                 requireActivity().runOnUiThread(() -> {
                     memberList.clear();
                     if (members != null) {

@@ -10,9 +10,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseUser;
 import com.messkhata.R;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
+import com.messkhata.data.sync.FirebaseAuthHelper;
 
 /**
  * Sign Up Activity for new user registration.
@@ -29,6 +31,7 @@ public class SignUpActivity extends AppCompatActivity {
     private View progressBar;
 
     private UserDao userDao;
+    private FirebaseAuthHelper firebaseAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +40,9 @@ public class SignUpActivity extends AppCompatActivity {
 
         // Initialize DAO
         userDao = new UserDao(this);
+
+        // Initialize Firebase Auth
+        firebaseAuth = FirebaseAuthHelper.getInstance();
 
         initViews();
         setupListeners();
@@ -106,6 +112,39 @@ public class SignUpActivity extends AppCompatActivity {
 
         showLoading(true);
 
+        // First, create Firebase account
+        firebaseAuth.signUpWithEmail(email, password, new FirebaseAuthHelper.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser firebaseUser) {
+                // Firebase account created, now create local account
+                createLocalAccount(name, email, phone, password, firebaseUser);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+
+                    // Check if email already exists in Firebase
+                    if (error.contains("email address is already in use")) {
+                        Toast.makeText(SignUpActivity.this,
+                                "This email is already registered. Please login instead.",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(SignUpActivity.this,
+                                "Registration failed: " + error,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Create local database account after Firebase signup
+     */
+    private void createLocalAccount(String name, String email, String phone,
+            String password, FirebaseUser firebaseUser) {
         // Register user in background thread
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             boolean success = userDao.registerUser(name, email, phone, password);
@@ -114,6 +153,19 @@ public class SignUpActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 showLoading(false);
                 if (success) {
+                    // Update Firebase display name
+                    firebaseAuth.updateDisplayName(name, new FirebaseAuthHelper.AuthCallback() {
+                        @Override
+                        public void onSuccess(FirebaseUser user) {
+                            // Name updated
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            // Non-critical, continue anyway
+                        }
+                    });
+
                     Toast.makeText(SignUpActivity.this,
                             "Registration successful!",
                             Toast.LENGTH_SHORT).show();
@@ -124,6 +176,17 @@ public class SignUpActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 } else {
+                    // Local registration failed, delete Firebase account
+                    firebaseAuth.deleteAccount(new FirebaseAuthHelper.AuthCallback() {
+                        @Override
+                        public void onSuccess(FirebaseUser user) {
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                        }
+                    });
+
                     Toast.makeText(SignUpActivity.this,
                             "Registration failed. Email or phone already exists.",
                             Toast.LENGTH_SHORT).show();
