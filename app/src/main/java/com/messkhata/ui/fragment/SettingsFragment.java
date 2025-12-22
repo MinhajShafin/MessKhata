@@ -170,11 +170,13 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 Mess mess = messDao.getMessByIdAsObject(messId);
+                // Get the Firebase invitation code (6-digit) instead of local code
+                String invitationCode = messDao.getSavedInvitationCode(messId);
 
                 requireActivity().runOnUiThread(() -> {
                     if (mess != null) {
                         tvMessName.setText(mess.getMessName());
-                        tvMessJoinCode.setText(mess.getInvitationCode());
+                        tvMessJoinCode.setText(invitationCode);
                     }
                 });
             } catch (Exception e) {
