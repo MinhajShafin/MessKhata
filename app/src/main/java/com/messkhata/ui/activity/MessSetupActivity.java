@@ -19,6 +19,7 @@ import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.User;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.utils.PreferenceManager;
 
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public class MessSetupActivity extends AppCompatActivity {
     private UserDao userDao;
     private PreferenceManager prefManager;
     private FirebaseFirestore firestore;
+    private SyncManager syncManager;
     private long userId;
 
     private MaterialButton btnCreateMess;
@@ -54,6 +56,9 @@ public class MessSetupActivity extends AppCompatActivity {
 
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
+
+        // Initialize SyncManager
+        syncManager = SyncManager.getInstance(this);
 
         // Get PreferenceManager and userId
         prefManager = PreferenceManager.getInstance(this);
@@ -181,6 +186,9 @@ public class MessSetupActivity extends AppCompatActivity {
                                 User user = userDao.getUserByIdAsObject((int) userId);
 
                                 if (user != null) {
+                                    // Sync user to Firebase (they're now the admin of this mess)
+                                    syncManager.syncUserImmediate(user);
+
                                     prefManager.saveUserSession(
                                             String.valueOf(userId),
                                             String.valueOf(localMessId),
@@ -318,6 +326,9 @@ public class MessSetupActivity extends AppCompatActivity {
 
                     User user = userDao.getUserByIdAsObject((int) userId);
                     if (user != null) {
+                        // Sync user to Firebase (they joined this mess)
+                        syncManager.syncUserImmediate(user);
+
                         prefManager.saveUserSession(
                                 String.valueOf(userId),
                                 String.valueOf(localMessId),

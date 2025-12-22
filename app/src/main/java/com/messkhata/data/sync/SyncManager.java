@@ -140,7 +140,7 @@ public class SyncManager {
 
     /**
      * Perform full sync (upload local changes, download remote changes)
-     * 
+     *
      * @param messId The mess ID to sync
      */
     public void performFullSync(int messId) {
@@ -375,8 +375,38 @@ public class SyncManager {
             Task<List<SyncableExpense>> expensesTask = firebaseRepo.getExpensesModifiedAfter(messId, lastSync);
             List<SyncableExpense> remoteExpenses = Tasks.await(expensesTask);
 
-            // Note: You may need to add an updateExpense method to ExpenseDao
-            Log.d(TAG, "Downloaded " + remoteExpenses.size() + " expenses from cloud");
+            for (SyncableExpense expense : remoteExpenses) {
+                // Save to local database
+                expenseDao.addOrUpdateExpense(
+                        expense.getExpenseId(),
+                        expense.getMessId(),
+                        expense.getAddedBy(),
+                        expense.getCategory(),
+                        expense.getAmount(),
+                        expense.getTitle(),
+                        expense.getDescription(),
+                        expense.getExpenseDate(),
+                        expense.getMemberCountAtTime(),
+                        expense.getCreatedAt());
+            }
+            Log.d(TAG, "Downloaded and saved " + remoteExpenses.size() + " expenses from cloud");
+
+            // Download users for this mess
+            Task<List<SyncableUser>> usersTask = firebaseRepo.getUsersByMessId(messId);
+            List<SyncableUser> remoteUsers = Tasks.await(usersTask);
+
+            for (SyncableUser user : remoteUsers) {
+                // Save to local database
+                userDao.addOrUpdateUser(
+                        user.getUserId(),
+                        user.getFullName(),
+                        user.getEmail(),
+                        user.getPhoneNumber(),
+                        user.getMessId(),
+                        user.getRole(),
+                        user.getJoinedDate());
+            }
+            Log.d(TAG, "Downloaded and saved " + remoteUsers.size() + " users from cloud");
 
         } catch (Exception e) {
             Log.e(TAG, "Error downloading remote changes", e);
@@ -425,6 +455,29 @@ public class SyncManager {
                 Log.d(TAG, "Expense synced immediately: " + expense.getExpenseId());
             } catch (Exception e) {
                 Log.e(TAG, "Error syncing expense immediately", e);
+            }
+        });
+    }
+
+    /**
+     * Sync a single user immediately (used when joining/creating mess)
+     */
+    public void syncUserImmediate(User user) {
+        if (!isNetworkAvailable() || !isAuthenticated()) {
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                SyncableUser syncableUser = new SyncableUser(user);
+                syncableUser.setLastModified(System.currentTimeMillis());
+
+                Task<DocumentReference> task = firebaseRepo.saveUser(syncableUser);
+                Tasks.await(task);
+
+                Log.d(TAG, "User synced immediately: " + user.getUserId());
+            } catch (Exception e) {
+                Log.e(TAG, "Error syncing user immediately", e);
             }
         });
     }
