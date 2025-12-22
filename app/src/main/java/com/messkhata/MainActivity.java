@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if user has mess
         String messIdStr = prefManager.getMessId();
-        int messId = -1;
+        int messId = 1;
         if (messIdStr != null && !messIdStr.isEmpty()) {
             try {
                 messId = Integer.parseInt(messIdStr);
