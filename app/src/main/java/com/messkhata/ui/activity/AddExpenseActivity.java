@@ -201,7 +201,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                         amount,
                         title,
                         description,
-                        selectedDate,
+                        currentTime,  // Use exact timestamp, not midnight
                         activeMemberCount);
 
                 // Sync to Firebase immediately
