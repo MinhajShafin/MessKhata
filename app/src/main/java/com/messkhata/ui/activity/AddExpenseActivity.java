@@ -180,9 +180,13 @@ public class AddExpenseActivity extends AppCompatActivity {
         // Save expense in background thread
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
+                // Use current exact time for fair expense distribution
+                // This ensures members who join later today don't see this expense
+                long currentTime = System.currentTimeMillis();
+                
                 // Calculate active member count at the time of expense
                 Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(selectedDate);
+                calendar.setTimeInMillis(currentTime);
                 int month = calendar.get(Calendar.MONTH) + 1;
                 int year = calendar.get(Calendar.YEAR);
                 int activeMemberCount = userDao.getActiveMemberCount(messId, month, year);
@@ -194,7 +198,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                     amount,
                     title,
                     description,
-                    selectedDate,
+                    currentTime,
                     activeMemberCount
                 );
 

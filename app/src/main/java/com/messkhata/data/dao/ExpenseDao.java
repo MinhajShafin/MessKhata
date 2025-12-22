@@ -364,6 +364,7 @@ public class ExpenseDao {
      * Get accurate user share of expenses from their join date onwards
      * Uses memberCountAtTime stored with each expense for precise calculation
      * New members only pay for expenses added AFTER they joined (fair distribution)
+     * Uses > (strictly after) to prevent same-day joiners from seeing earlier expenses
      * @param messId The mess ID
      * @param userJoinDate User's join date in seconds (Unix timestamp)
      * @return User's share of expenses since they joined
@@ -371,11 +372,11 @@ public class ExpenseDao {
     public double getAccurateUserShareOfExpenses(int messId, long userJoinDate) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        // Get expenses added AFTER user joined with their memberCountAtTime
-        // This ensures new members don't pay for old expenses
+        // Get expenses added AFTER user joined (strictly after, not equal)
+        // This ensures same-day joiners don't pay for earlier expenses
         String query = "SELECT amount, memberCountAtTime FROM " + 
                 MessKhataDatabase.TABLE_EXPENSES +
-                " WHERE messId = ? AND expenseDate >= ?";
+                " WHERE messId = ? AND expenseDate > ?";
 
         Cursor cursor = db.rawQuery(query, new String[]{
             String.valueOf(messId),
