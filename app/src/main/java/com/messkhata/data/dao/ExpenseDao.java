@@ -285,4 +285,43 @@ public class ExpenseDao {
         cursor.close();
         return total;
     }
+
+    /**
+     * Get total expenses for a user based on their join date
+     * Only includes expenses that occurred on or after the user's join date
+     * @param userJoinDate User's join date in seconds (Unix timestamp)
+     * @return Total expense amount for the user's share
+     */
+    public double getTotalExpensesAfterDate(int messId, long userJoinDate, int month, int year) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Calculate start and end timestamps for the month
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, month - 1, 1, 0, 0, 0);
+        long startDate = calendar.getTimeInMillis() / 1000;
+
+        calendar.add(Calendar.MONTH, 1);
+        long endDate = calendar.getTimeInMillis() / 1000;
+
+        // Use the later of userJoinDate or month start
+        long effectiveStartDate = Math.max(startDate, userJoinDate);
+
+        String query = "SELECT SUM(amount) as total FROM " + 
+                MessKhataDatabase.TABLE_EXPENSES +
+                " WHERE messId = ? AND expenseDate >= ? AND expenseDate < ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(effectiveStartDate),
+            String.valueOf(endDate)
+        });
+
+        double total = 0.0;
+        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            total = cursor.getDouble(0);
+        }
+        cursor.close();
+        return total;
+    }
 }
+

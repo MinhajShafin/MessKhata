@@ -148,14 +148,19 @@ public class DashboardFragment extends Fragment {
                 // Get user's total meal expense (using actual mealRate from Meals table)
                 double totalMealExpense = mealDao.getTotalMealExpense((int) userId, currentMonth, currentYear);
                 
-                // Get total mess expenses for the month
-                double totalMessExpenses = expenseDao.getTotalExpenses(messId, currentMonth, currentYear);
+                // Get user's joined date
+                long userJoinDate = user != null ? user.getJoinedDate() : 0;
                 
-                // Get active member count for expense distribution
+                // Get total expenses that occurred AFTER user joined
+                double userRelevantExpenses = expenseDao.getTotalExpensesAfterDate(messId, userJoinDate, currentMonth, currentYear);
+                
+                // Get count of members who were active when those expenses occurred
+                // For simplicity, we'll use current active member count
+                // In a more accurate system, we'd calculate per-expense member count
                 int activeMemberCount = userDao.getActiveMemberCount(messId, currentMonth, currentYear);
                 
-                // Calculate user's share of expenses
-                double sharedExpense = (activeMemberCount > 0) ? (totalMessExpenses / activeMemberCount) : 0.0;
+                // Calculate user's share of expenses (only expenses after they joined)
+                double sharedExpense = (activeMemberCount > 0) ? (userRelevantExpenses / activeMemberCount) : 0.0;
                 
                 // Calculate total expense (meal + shared)
                 double totalExpense = totalMealExpense + sharedExpense;

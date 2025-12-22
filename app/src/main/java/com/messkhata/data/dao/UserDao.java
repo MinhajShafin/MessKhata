@@ -361,11 +361,11 @@ public class UserDao {
 
     /**
      * Get count of active members for a specific month
-     * A member is considered active if they had any meals during that month
+     * Returns count of all active members in the mess who joined before the month ended
      * @param messId The mess ID
      * @param month The month (1-12)
      * @param year The year
-     * @return Count of distinct active members
+     * @return Count of active members
      */
     public int getActiveMemberCount(int messId, int month, int year) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -378,14 +378,13 @@ public class UserDao {
         calendar.add(Calendar.MONTH, 1);
         long endDate = calendar.getTimeInMillis() / 1000;
 
-        String query = "SELECT COUNT(DISTINCT userId) as count FROM " + 
-                MessKhataDatabase.TABLE_MEALS +
-                " WHERE messId = ? AND mealDate >= ? AND mealDate < ? " +
-                "AND (breakfast > 0 OR lunch > 0 OR dinner > 0)";
+        // Count all active members who joined before the end of the month
+        String query = "SELECT COUNT(*) as count FROM " + 
+                MessKhataDatabase.TABLE_USERS +
+                " WHERE messId = ? AND isActive = 1 AND joinedDate < ?";
         
         Cursor cursor = db.rawQuery(query, new String[]{
             String.valueOf(messId),
-            String.valueOf(startDate),
             String.valueOf(endDate)
         });
 
