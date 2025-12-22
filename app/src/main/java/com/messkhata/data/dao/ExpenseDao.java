@@ -372,6 +372,26 @@ public class ExpenseDao {
 
         long currentDate = System.currentTimeMillis() / 1000;
 
+        android.util.Log.d("ExpenseDaoDebug", "=== getAccurateUserShareOfExpenses ===");
+        android.util.Log.d("ExpenseDaoDebug", "messId: " + messId);
+        android.util.Log.d("ExpenseDaoDebug", "userJoinDate: " + userJoinDate);
+        android.util.Log.d("ExpenseDaoDebug", "currentDate: " + currentDate);
+
+        // First, get ALL expenses to see what we have
+        String debugQuery = "SELECT expenseId, expenseDate, amount, memberCountAtTime FROM " +
+                MessKhataDatabase.TABLE_EXPENSES +
+                " WHERE messId = ?";
+        Cursor debugCursor = db.rawQuery(debugQuery, new String[]{String.valueOf(messId)});
+        android.util.Log.d("ExpenseDaoDebug", "Total expenses in DB: " + debugCursor.getCount());
+        while (debugCursor.moveToNext()) {
+            long expenseDate = debugCursor.getLong(1);
+            double amount = debugCursor.getDouble(2);
+            int memberCount = debugCursor.getInt(3);
+            android.util.Log.d("ExpenseDaoDebug", "  Expense: date=" + expenseDate + ", amount=" + amount +
+                    ", members=" + memberCount + ", inRange=" + (expenseDate >= userJoinDate && expenseDate <= currentDate));
+        }
+        debugCursor.close();
+
         // Get all expenses since user joined with their memberCountAtTime
         String query = "SELECT amount, memberCountAtTime FROM " + 
                 MessKhataDatabase.TABLE_EXPENSES +
@@ -393,6 +413,7 @@ public class ExpenseDao {
                 userShare += (amount / memberCount);
             }
         }
+        android.util.Log.d("ExpenseDaoDebug", "Result: " + userShare);
         cursor.close();
         return userShare;
     }

@@ -314,6 +314,26 @@ public class MealDao {
 
         long currentDate = System.currentTimeMillis() / 1000;
 
+        android.util.Log.d("MealDaoDebug", "=== getCumulativeMealExpenseFromJoinDate ===");
+        android.util.Log.d("MealDaoDebug", "userId: " + userId);
+        android.util.Log.d("MealDaoDebug", "userJoinDate: " + userJoinDate);
+        android.util.Log.d("MealDaoDebug", "currentDate: " + currentDate);
+
+        // First, get ALL meals for this user to see what we have
+        String debugQuery = "SELECT mealId, mealDate, breakfast, lunch, dinner, mealRate FROM " +
+                MessKhataDatabase.TABLE_MEALS +
+                " WHERE userId = ?";
+        Cursor debugCursor = db.rawQuery(debugQuery, new String[]{String.valueOf(userId)});
+        android.util.Log.d("MealDaoDebug", "Total meals in DB for user: " + debugCursor.getCount());
+        while (debugCursor.moveToNext()) {
+            long mealDate = debugCursor.getLong(1);
+            int meals = debugCursor.getInt(2) + debugCursor.getInt(3) + debugCursor.getInt(4);
+            double rate = debugCursor.getDouble(5);
+            android.util.Log.d("MealDaoDebug", "  Meal: date=" + mealDate + ", count=" + meals + 
+                    ", rate=" + rate + ", inRange=" + (mealDate >= userJoinDate && mealDate <= currentDate));
+        }
+        debugCursor.close();
+
         String query = "SELECT SUM((breakfast + lunch + dinner) * mealRate) as totalExpense FROM " +
                 MessKhataDatabase.TABLE_MEALS +
                 " WHERE userId = ? AND mealDate >= ? AND mealDate <= ?";
@@ -328,6 +348,7 @@ public class MealDao {
         if (cursor.moveToFirst()) {
             totalExpense = cursor.getDouble(cursor.getColumnIndexOrThrow("totalExpense"));
         }
+        android.util.Log.d("MealDaoDebug", "Result: " + totalExpense);
         cursor.close();
         return totalExpense;
     }
