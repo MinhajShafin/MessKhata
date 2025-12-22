@@ -175,14 +175,19 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
 
         // Refresh data after a delay to allow sync to complete
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!isAdded())
+                return; // Fragment may be detached
+
             if (progressSync != null) {
                 progressSync.setVisibility(View.GONE);
             }
             loadUserProfile();
             loadMessInfo();
             loadMembers();
-            Toast.makeText(requireContext(), "Sync complete!", Toast.LENGTH_SHORT).show();
-        }, 3000);
+            if (isAdded()) {
+                Toast.makeText(requireContext(), "Sync complete!", Toast.LENGTH_SHORT).show();
+            }
+        }, 5000); // Increased to 5 seconds for more time to sync
     }
 
     private void showLeaveMessConfirmation() {

@@ -198,16 +198,25 @@ public class FirebaseRepository {
      * Get all users for a mess by Firebase mess document ID
      */
     public Task<List<SyncableUser>> getUsersByFirebaseMessId(String firebaseMessId) {
+        Log.d(TAG, "getUsersByFirebaseMessId called with: " + firebaseMessId);
         return firestore.collection(SyncableUser.COLLECTION_NAME)
                 .whereEqualTo("firebaseMessId", firebaseMessId)
                 .get()
                 .continueWith(task -> {
                     List<SyncableUser> users = new ArrayList<>();
-                    QuerySnapshot snapshot = task.getResult();
-                    if (snapshot != null) {
-                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                            users.add(SyncableUser.fromFirebaseMap(doc.getId(), doc.getData()));
+                    if (task.isSuccessful()) {
+                        QuerySnapshot snapshot = task.getResult();
+                        if (snapshot != null) {
+                            Log.d(TAG, "Firebase query returned " + snapshot.size() + " documents");
+                            for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                                Log.d(TAG, "User doc: " + doc.getId() + ", data: " + doc.getData());
+                                users.add(SyncableUser.fromFirebaseMap(doc.getId(), doc.getData()));
+                            }
+                        } else {
+                            Log.d(TAG, "Firebase query returned null snapshot");
                         }
+                    } else {
+                        Log.e(TAG, "Firebase query failed", task.getException());
                     }
                     return users;
                 });
@@ -275,6 +284,32 @@ public class FirebaseRepository {
                         for (DocumentSnapshot doc : snapshot.getDocuments()) {
                             meals.add(SyncableMeal.fromFirebaseMap(doc.getId(), doc.getData()));
                         }
+                    }
+                    return meals;
+                });
+    }
+
+    /**
+     * Get ALL meals for a mess by Firebase mess ID (no timestamp filter - doesn't
+     * require index)
+     */
+    public Task<List<SyncableMeal>> getAllMealsByFirebaseMessId(String firebaseMessId) {
+        Log.d(TAG, "getAllMealsByFirebaseMessId called with: " + firebaseMessId);
+        return firestore.collection(SyncableMeal.COLLECTION_NAME)
+                .whereEqualTo("firebaseMessId", firebaseMessId)
+                .get()
+                .continueWith(task -> {
+                    List<SyncableMeal> meals = new ArrayList<>();
+                    if (task.isSuccessful()) {
+                        QuerySnapshot snapshot = task.getResult();
+                        if (snapshot != null) {
+                            Log.d(TAG, "Firebase returned " + snapshot.size() + " meals");
+                            for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                                meals.add(SyncableMeal.fromFirebaseMap(doc.getId(), doc.getData()));
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "Error getting meals", task.getException());
                     }
                     return meals;
                 });
@@ -364,6 +399,32 @@ public class FirebaseRepository {
                         for (DocumentSnapshot doc : snapshot.getDocuments()) {
                             expenses.add(SyncableExpense.fromFirebaseMap(doc.getId(), doc.getData()));
                         }
+                    }
+                    return expenses;
+                });
+    }
+
+    /**
+     * Get ALL expenses for a mess by Firebase mess ID (no timestamp filter -
+     * doesn't require index)
+     */
+    public Task<List<SyncableExpense>> getAllExpensesByFirebaseMessId(String firebaseMessId) {
+        Log.d(TAG, "getAllExpensesByFirebaseMessId called with: " + firebaseMessId);
+        return firestore.collection(SyncableExpense.COLLECTION_NAME)
+                .whereEqualTo("firebaseMessId", firebaseMessId)
+                .get()
+                .continueWith(task -> {
+                    List<SyncableExpense> expenses = new ArrayList<>();
+                    if (task.isSuccessful()) {
+                        QuerySnapshot snapshot = task.getResult();
+                        if (snapshot != null) {
+                            Log.d(TAG, "Firebase returned " + snapshot.size() + " expenses");
+                            for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                                expenses.add(SyncableExpense.fromFirebaseMap(doc.getId(), doc.getData()));
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "Error getting expenses", task.getException());
                     }
                     return expenses;
                 });

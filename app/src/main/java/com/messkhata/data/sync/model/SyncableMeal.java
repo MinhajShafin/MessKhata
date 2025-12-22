@@ -16,6 +16,7 @@ public class SyncableMeal extends Meal implements SyncableEntity {
 
     private String firebaseId;
     private String firebaseMessId; // Firebase document ID of the mess
+    private String userEmail; // Email for cross-device user matching
     private SyncStatus syncStatus = SyncStatus.PENDING_UPLOAD;
     private long lastModified;
 
@@ -73,11 +74,20 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         this.firebaseMessId = firebaseMessId;
     }
 
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     @Override
     public Map<String, Object> toFirebaseMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("mealId", getMealId());
         map.put("userId", getUserId());
+        map.put("userEmail", userEmail); // For cross-device user matching
         map.put("messId", getMessId());
         map.put("firebaseMessId", firebaseMessId); // Use this for queries
         map.put("mealDate", getMealDate());
@@ -132,6 +142,9 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         }
         if (data.containsKey("firebaseMessId")) {
             meal.setFirebaseMessId((String) data.get("firebaseMessId"));
+        }
+        if (data.containsKey("userEmail")) {
+            meal.setUserEmail((String) data.get("userEmail"));
         }
 
         meal.setSyncStatus(SyncStatus.SYNCED);
