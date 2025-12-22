@@ -241,6 +241,7 @@ public class ExpenseDao {
                 cursor.getInt(cursor.getColumnIndexOrThrow("addedBy")),
                 cursor.getString(cursor.getColumnIndexOrThrow("category")),
                 cursor.getDouble(cursor.getColumnIndexOrThrow("amount")),
+                cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
