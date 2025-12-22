@@ -52,6 +52,8 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
     // UI Components - Actions
     private MaterialButton btnLogout;
     private MaterialButton btnLeaveMess;
+    private View layoutSync;
+    private View progressSync;
 
     // Adapter
     private MemberAdapter memberAdapter;
@@ -110,6 +112,8 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         // Actions
         btnLogout = view.findViewById(R.id.btnLogout);
         btnLeaveMess = view.findViewById(R.id.btnLeaveMess);
+        layoutSync = view.findViewById(R.id.layoutSync);
+        progressSync = view.findViewById(R.id.progressSync);
     }
 
     private void initializeDAOs() {
@@ -150,6 +154,35 @@ public class SettingsFragment extends Fragment implements MemberAdapter.OnMember
         if (btnLeaveMess != null) {
             btnLeaveMess.setOnClickListener(v -> showLeaveMessConfirmation());
         }
+
+        if (layoutSync != null) {
+            layoutSync.setOnClickListener(v -> triggerManualSync());
+        }
+    }
+
+    private void triggerManualSync() {
+        if (progressSync != null) {
+            progressSync.setVisibility(View.VISIBLE);
+        }
+
+        Toast.makeText(requireContext(), "Syncing...", Toast.LENGTH_SHORT).show();
+
+        // Trigger sync in background
+        SyncWorker.triggerImmediateSync(requireContext());
+
+        // Also perform sync directly for immediate feedback
+        syncManager.performFullSync(messId);
+
+        // Refresh data after a delay to allow sync to complete
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (progressSync != null) {
+                progressSync.setVisibility(View.GONE);
+            }
+            loadUserProfile();
+            loadMessInfo();
+            loadMembers();
+            Toast.makeText(requireContext(), "Sync complete!", Toast.LENGTH_SHORT).show();
+        }, 3000);
     }
 
     private void showLeaveMessConfirmation() {

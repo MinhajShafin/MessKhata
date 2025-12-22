@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.sync.FirebaseAuthHelper;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.data.sync.SyncWorker;
 import com.messkhata.ui.activity.LoginActivity;
 import com.messkhata.ui.activity.MessSetupActivity;
@@ -187,6 +188,29 @@ public class MainActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Trigger sync when app comes to foreground
+        triggerSyncOnResume();
+    }
+
+    private void triggerSyncOnResume() {
+        String messIdStr = prefManager.getMessId();
+        if (messIdStr != null && !messIdStr.isEmpty()) {
+            try {
+                int messId = Integer.parseInt(messIdStr);
+                if (messId > 0) {
+                    // Perform sync in background
+                    SyncManager syncManager = SyncManager.getInstance(this);
+                    syncManager.performFullSync(messId);
+                }
+            } catch (NumberFormatException e) {
+                // Ignore
+            }
+        }
     }
 
     @Override

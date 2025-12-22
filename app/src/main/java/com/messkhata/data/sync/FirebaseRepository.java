@@ -174,11 +174,32 @@ public class FirebaseRepository {
     }
 
     /**
-     * Get all users for a mess
+     * Get all users for a mess by Firebase mess ID
      */
     public Task<List<SyncableUser>> getUsersByMessId(int messId) {
+        // Note: This still uses messId for backward compatibility
+        // New method getUsersByFirebaseMessId should be preferred
         return firestore.collection(SyncableUser.COLLECTION_NAME)
                 .whereEqualTo("messId", messId)
+                .get()
+                .continueWith(task -> {
+                    List<SyncableUser> users = new ArrayList<>();
+                    QuerySnapshot snapshot = task.getResult();
+                    if (snapshot != null) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            users.add(SyncableUser.fromFirebaseMap(doc.getId(), doc.getData()));
+                        }
+                    }
+                    return users;
+                });
+    }
+
+    /**
+     * Get all users for a mess by Firebase mess document ID
+     */
+    public Task<List<SyncableUser>> getUsersByFirebaseMessId(String firebaseMessId) {
+        return firestore.collection(SyncableUser.COLLECTION_NAME)
+                .whereEqualTo("firebaseMessId", firebaseMessId)
                 .get()
                 .continueWith(task -> {
                     List<SyncableUser> users = new ArrayList<>();
@@ -260,8 +281,29 @@ public class FirebaseRepository {
     }
 
     /**
-     * Get meals modified after a certain timestamp
+     * Get meals modified after a certain timestamp (by Firebase mess ID)
      */
+    public Task<List<SyncableMeal>> getMealsModifiedAfter(String firebaseMessId, long timestamp) {
+        return firestore.collection(SyncableMeal.COLLECTION_NAME)
+                .whereEqualTo("firebaseMessId", firebaseMessId)
+                .whereGreaterThan("lastModified", timestamp)
+                .get()
+                .continueWith(task -> {
+                    List<SyncableMeal> meals = new ArrayList<>();
+                    QuerySnapshot snapshot = task.getResult();
+                    if (snapshot != null) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            meals.add(SyncableMeal.fromFirebaseMap(doc.getId(), doc.getData()));
+                        }
+                    }
+                    return meals;
+                });
+    }
+
+    /**
+     * Get meals modified after a certain timestamp (deprecated - uses local messId)
+     */
+    @Deprecated
     public Task<List<SyncableMeal>> getMealsModifiedAfter(int messId, long timestamp) {
         return firestore.collection(SyncableMeal.COLLECTION_NAME)
                 .whereEqualTo("messId", messId)
@@ -328,8 +370,30 @@ public class FirebaseRepository {
     }
 
     /**
-     * Get expenses modified after a certain timestamp
+     * Get expenses modified after a certain timestamp (by Firebase mess ID)
      */
+    public Task<List<SyncableExpense>> getExpensesModifiedAfter(String firebaseMessId, long timestamp) {
+        return firestore.collection(SyncableExpense.COLLECTION_NAME)
+                .whereEqualTo("firebaseMessId", firebaseMessId)
+                .whereGreaterThan("lastModified", timestamp)
+                .get()
+                .continueWith(task -> {
+                    List<SyncableExpense> expenses = new ArrayList<>();
+                    QuerySnapshot snapshot = task.getResult();
+                    if (snapshot != null) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            expenses.add(SyncableExpense.fromFirebaseMap(doc.getId(), doc.getData()));
+                        }
+                    }
+                    return expenses;
+                });
+    }
+
+    /**
+     * Get expenses modified after a certain timestamp (deprecated - uses local
+     * messId)
+     */
+    @Deprecated
     public Task<List<SyncableExpense>> getExpensesModifiedAfter(int messId, long timestamp) {
         return firestore.collection(SyncableExpense.COLLECTION_NAME)
                 .whereEqualTo("messId", messId)

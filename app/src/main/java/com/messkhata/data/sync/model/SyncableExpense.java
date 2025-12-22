@@ -15,6 +15,7 @@ public class SyncableExpense extends Expense implements SyncableEntity {
     public static final String COLLECTION_NAME = "expenses";
 
     private String firebaseId;
+    private String firebaseMessId; // Firebase document ID of the mess
     private SyncStatus syncStatus = SyncStatus.PENDING_UPLOAD;
     private long lastModified;
 
@@ -65,11 +66,20 @@ public class SyncableExpense extends Expense implements SyncableEntity {
         this.lastModified = timestamp;
     }
 
+    public String getFirebaseMessId() {
+        return firebaseMessId;
+    }
+
+    public void setFirebaseMessId(String firebaseMessId) {
+        this.firebaseMessId = firebaseMessId;
+    }
+
     @Override
     public Map<String, Object> toFirebaseMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("expenseId", getExpenseId());
         map.put("messId", getMessId());
+        map.put("firebaseMessId", firebaseMessId); // Use this for queries
         map.put("addedBy", getAddedBy());
         map.put("category", getCategory());
         map.put("amount", getAmount());
@@ -126,6 +136,9 @@ public class SyncableExpense extends Expense implements SyncableEntity {
         }
         if (data.containsKey("lastModified")) {
             expense.setLastModified(((Number) data.get("lastModified")).longValue());
+        }
+        if (data.containsKey("firebaseMessId")) {
+            expense.setFirebaseMessId((String) data.get("firebaseMessId"));
         }
 
         expense.setSyncStatus(SyncStatus.SYNCED);
