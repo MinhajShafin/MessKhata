@@ -75,6 +75,7 @@ public class ReportDao {
 
     /**
      * Get total expenses for a mess in a specific month
+     * Includes both meal expenses and other expenses
      * @return Total amount across all categories
      */
     public double getTotalExpenses(int messId, int month, int year) {
@@ -88,22 +89,41 @@ public class ReportDao {
         calendar.add(Calendar.MONTH, 1);
         long endDate = calendar.getTimeInMillis() / 1000;
 
-        String query = "SELECT SUM(amount) as total FROM " + 
+        // Get total from Expenses table
+        String expenseQuery = "SELECT SUM(amount) as total FROM " + 
                 MessKhataDatabase.TABLE_EXPENSES +
                 " WHERE messId = ? AND expenseDate >= ? AND expenseDate < ?";
 
-        Cursor cursor = db.rawQuery(query, new String[]{
+        Cursor cursor = db.rawQuery(expenseQuery, new String[]{
             String.valueOf(messId),
             String.valueOf(startDate),
             String.valueOf(endDate)
         });
 
-        double total = 0.0;
+        double expenseTotal = 0.0;
         if (cursor.moveToFirst() && !cursor.isNull(0)) {
-            total = cursor.getDouble(0);
+            expenseTotal = cursor.getDouble(0);
         }
         cursor.close();
-        return total;
+        
+        // Get total meal expenses from Meals table
+        String mealQuery = "SELECT SUM((breakfast + lunch + dinner) * mealRate) as total FROM " +
+                MessKhataDatabase.TABLE_MEALS +
+                " WHERE messId = ? AND mealDate >= ? AND mealDate < ?";
+        
+        cursor = db.rawQuery(mealQuery, new String[]{
+            String.valueOf(messId),
+            String.valueOf(startDate),
+            String.valueOf(endDate)
+        });
+        
+        double mealTotal = 0.0;
+        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            mealTotal = cursor.getDouble(0);
+        }
+        cursor.close();
+        
+        return expenseTotal + mealTotal;
     }
 
     /**
@@ -123,22 +143,13 @@ public class ReportDao {
     }
 
     /**
-     * Calculate actual meal rate for a specific month
-     * Rate = (totalGrocery / totalMeals) + cookingCharge
-     * @return Meal rate per meal
+     * Get the fixed meal rate for a specific month
+     * Uses the fixed rate from Mess settings (not calculated)
+     * @return Fixed meal rate per meal
      */
     public double calculateMealRate(int messId, int month, int year) {
-        double groceryTotal = getGroceryTotal(messId, month, year);
-        int totalMeals = getTotalMeals(messId, month, year);
-
-        if (totalMeals == 0) {
-            return getEstimatedMealRate(messId); // Return estimated rate if no meals
-        }
-
-        double groceryRate = groceryTotal / totalMeals;
-        double cookingCharge = getCookingCharge(messId);
-
-        return groceryRate + cookingCharge;
+        // Return the fixed meal rate from Mess settings
+        return getEstimatedMealRate(messId);
     }
 
     /**

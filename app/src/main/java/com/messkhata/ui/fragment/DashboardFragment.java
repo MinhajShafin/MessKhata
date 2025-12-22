@@ -43,7 +43,7 @@ public class DashboardFragment extends Fragment {
     private TextView tvMemberCount;
     private TextView tvCurrentMealRate;
     private TextView tvTotalMeals;
-    private TextView tvTotalExpenses;
+    private TextView tvMonthlyExpenses;
     private ImageView ivSync;
 
     // DAOs
@@ -85,7 +85,7 @@ public class DashboardFragment extends Fragment {
         tvMemberCount = view.findViewById(R.id.tvMemberCount);
         tvCurrentMealRate = view.findViewById(R.id.tvCurrentMealRate);
         tvTotalMeals = view.findViewById(R.id.tvTotalMeals);
-        tvTotalExpenses = view.findViewById(R.id.tvTotalExpenses);
+        tvMonthlyExpenses = view.findViewById(R.id.tvMonthlyExpenses);
         ivSync = view.findViewById(R.id.ivSync);
     }
 
@@ -217,7 +217,7 @@ public class DashboardFragment extends Fragment {
         tvCurrentMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
         tvTotalMeals.setText(String.valueOf(totalMeals));
         // Show total expense (meal expense + shared expense)
-        tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpense));
+        tvMonthlyExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpense));
     }
 
     @Override
