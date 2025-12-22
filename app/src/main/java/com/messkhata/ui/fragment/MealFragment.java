@@ -13,6 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.messkhata.R;
 import com.messkhata.data.dao.MealDao;
 import com.messkhata.data.dao.MessDao;
@@ -53,6 +55,13 @@ public class MealFragment extends Fragment {
     private TextView tvDinnerPrefCount;
     private MaterialButton btnSavePreference;
 
+    // UI Components - Admin Meal Rate Section
+    private MaterialCardView cardAdminMealRate;
+    private TextView tvCurrentMealRate;
+    private TextInputEditText etGroceryBudget;
+    private TextInputEditText etCookingCharge;
+    private MaterialButton btnUpdateMealRate;
+
     // DAOs
     private MealDao mealDao;
     private MessDao messDao;
@@ -61,6 +70,7 @@ public class MealFragment extends Fragment {
     private PreferenceManager prefManager;
     private long userId;
     private int messId;
+    private String userRole;
     
     // Meal counts
     private int breakfastCount = 1;
@@ -115,6 +125,13 @@ public class MealFragment extends Fragment {
         tvDinnerPrefCount = view.findViewById(R.id.tvDinnerCount);
         
         btnSavePreference = view.findViewById(R.id.btnSavePreference);
+        
+        // Admin meal rate section
+        cardAdminMealRate = view.findViewById(R.id.cardAdminMealRate);
+        tvCurrentMealRate = view.findViewById(R.id.tvCurrentMealRate);
+        etGroceryBudget = view.findViewById(R.id.etGroceryBudget);
+        etCookingCharge = view.findViewById(R.id.etCookingCharge);
+        btnUpdateMealRate = view.findViewById(R.id.btnUpdateMealRate);
     }
 
     private void initializeDAO() {
@@ -137,8 +154,15 @@ public class MealFragment extends Fragment {
         
         userId = Long.parseLong(userIdStr);
         messId = Integer.parseInt(messIdStr);
+        userRole = prefManager.getUserRole();
         currentDate = Calendar.getInstance();
         updateDateDisplay();
+        
+        // Show admin section if user is admin
+        if ("admin".equals(userRole)) {
+            cardAdminMealRate.setVisibility(View.VISIBLE);
+            loadCurrentMealRates();
+        }
     }
 
     private void setupListeners() {
@@ -156,6 +180,9 @@ public class MealFragment extends Fragment {
         
         // Save preference button
         btnSavePreference.setOnClickListener(v -> saveMealPreference());
+        
+        // Admin update meal rate button
+        btnUpdateMealRate.setOnClickListener(v -> updateMealRates());
     }
 
     private void updateCount(String mealType, int change) {
@@ -336,6 +363,96 @@ public class MealFragment extends Fragment {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTimeInMillis() / 1000; // Convert to seconds
+    }
+
+    /**
+     * Load current meal rates from database (Admin only)
+     */
+    private void loadCurrentMealRates() {
+        MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                Mess mess = messDao.getMessByIdAsObject(messId);
+                if (mess != null) {
+                    double grocery = mess.getGroceryBudgetPerMeal();
+                    double cooking = mess.getCookingChargePerMeal();
+                    double total = grocery + cooking;
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        tvCurrentMealRate.setText(String.format(Locale.getDefault(),
+                            "Current Rate: ৳ %.2f per meal", total));
+                        etGroceryBudget.setText(String.valueOf(grocery));
+                        etCookingCharge.setText(String.valueOf(cooking));
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Update meal rates (Admin only)
+     */
+    private void updateMealRates() {
+        String groceryStr = etGroceryBudget.getText() != null ? 
+            etGroceryBudget.getText().toString().trim() : "";
+        String cookingStr = etCookingCharge.getText() != null ? 
+            etCookingCharge.getText().toString().trim() : "";
+        
+        if (groceryStr.isEmpty() || cookingStr.isEmpty()) {
+            Toast.makeText(requireContext(), "Please fill in both fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        try {
+            double grocery = Double.parseDouble(groceryStr);
+            double cooking = Double.parseDouble(cookingStr);
+            
+            if (grocery < 0 || cooking < 0) {
+                Toast.makeText(requireContext(), "Rates cannot be negative", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            if (grocery + cooking == 0) {
+                Toast.makeText(requireContext(), "Total rate cannot be zero", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Update in database
+            MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+                try {
+                    boolean success = messDao.updateMessRates(messId, grocery, cooking);
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        if (success) {
+                            double total = grocery + cooking;
+                            tvCurrentMealRate.setText(String.format(Locale.getDefault(),
+                                "Current Rate: ৳ %.2f per meal", total));
+                            Toast.makeText(requireContext(), 
+                                "Meal rate updated successfully! New rate: ৳" + total, 
+                                Toast.LENGTH_LONG).show();
+                            
+                            // Refresh meal expense display
+                            updateTotalAndSave();
+                        } else {
+                            Toast.makeText(requireContext(), 
+                                "Failed to update meal rate", 
+                                Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    requireActivity().runOnUiThread(() ->
+                        Toast.makeText(requireContext(), 
+                            "Error: " + e.getMessage(), 
+                            Toast.LENGTH_SHORT).show()
+                    );
+                }
+            });
+            
+        } catch (NumberFormatException e) {
+            Toast.makeText(requireContext(), "Please enter valid numbers", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
