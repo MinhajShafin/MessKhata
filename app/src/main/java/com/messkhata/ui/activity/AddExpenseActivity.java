@@ -18,6 +18,8 @@ import com.messkhata.R;
 import com.messkhata.data.dao.ExpenseDao;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
+import com.messkhata.data.model.Expense;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.utils.DateUtils;
 import com.messkhata.utils.PreferenceManager;
 
@@ -37,11 +39,12 @@ public class AddExpenseActivity extends AppCompatActivity {
     private ChipGroup chipGroupCategory;
     private MaterialButton btnSave;
     private ProgressBar progressBar;
-    
+
     // DAOs
     private ExpenseDao expenseDao;
     private UserDao userDao;
-    
+    private SyncManager syncManager;
+
     // Session data
     private PreferenceManager prefManager;
     private int messId;
@@ -82,6 +85,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     private void initDAO() {
         expenseDao = new ExpenseDao(this);
         userDao = new UserDao(this);
+        syncManager = SyncManager.getInstance(this);
     }
 
     private void loadSessionData() {
@@ -119,8 +123,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
+                calendar.get(Calendar.DAY_OF_MONTH));
 
         // Don't allow future dates
         dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
@@ -190,22 +193,29 @@ public class AddExpenseActivity extends AppCompatActivity {
                 int month = calendar.get(Calendar.MONTH) + 1;
                 int year = calendar.get(Calendar.YEAR);
                 int activeMemberCount = userDao.getActiveMemberCount(messId, month, year);
-                
+
                 long expenseId = expenseDao.addExpense(
-                    messId,
-                    userId,
-                    selectedCategory,
-                    amount,
-                    title,
-                    description,
-                    currentTime,
-                    activeMemberCount
-                );
+                        messId,
+                        userId,
+                        selectedCategory,
+                        amount,
+                        title,
+                        description,
+                        selectedDate,
+                        activeMemberCount);
+
+                // Sync to Firebase immediately
+                if (expenseId > 0) {
+                    Expense expense = expenseDao.getExpenseById((int) expenseId);
+                    if (expense != null) {
+                        syncManager.syncExpenseImmediate(expense);
+                    }
+                }
 
                 runOnUiThread(() -> {
                     showLoading(false);
                     if (expenseId > 0) {
-                        Toast.makeText(this, "Expense added successfully", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Expense added and synced", Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
                         Toast.makeText(this, "Failed to add expense", Toast.LENGTH_SHORT).show();

@@ -25,7 +25,7 @@ public class UserDao {
 
     /**
      * Register a new user
-     * 
+     *
      * @return true if successful, false if email/phone already exists
      */
     public boolean registerUser(String name, String email, String phone, String password) {
@@ -102,7 +102,7 @@ public class UserDao {
 
     /**
      * Login user - verify credentials
-     * 
+     *
      * @return userId if successful, -1 if failed
      */
     public long loginUser(String email, String password) {
@@ -166,7 +166,7 @@ public class UserDao {
 
     /**
      * Get user's mess ID
-     * 
+     *
      * @return messId if user has mess, -1 if no mess
      */
     public int getUserMessId(long userId) {
@@ -203,7 +203,7 @@ public class UserDao {
 
     /**
      * Get user by ID as User object
-     * 
+     *
      * @return User object or null if not found
      */
     public User getUserByIdAsObject(long userId) {
@@ -231,7 +231,7 @@ public class UserDao {
 
     /**
      * Get all members of a mess
-     * 
+     *
      * @return List of User objects
      */
     public List<User> getMembersByMessId(int messId) {
@@ -259,7 +259,7 @@ public class UserDao {
 
     /**
      * Get all users in a mess as Cursor (for sync operations)
-     * 
+     *
      * @return Cursor with user data
      */
     public Cursor getUsersByMessId(int messId) {
@@ -272,7 +272,7 @@ public class UserDao {
 
     /**
      * Update user's mess ID
-     * 
+     *
      * @return true if successful
      */
     public boolean updateUserMessId(long userId, int messId) {
@@ -290,7 +290,7 @@ public class UserDao {
 
     /**
      * Update user's role (admin only)
-     * 
+     *
      * @return true if successful
      */
     public boolean updateUserRole(long userId, String role) {
@@ -308,7 +308,7 @@ public class UserDao {
 
     /**
      * Get user's role
-     * 
+     *
      * @return Role string ("admin" or "member") or null if user not found
      */
     public String getUserRole(long userId) {
@@ -328,7 +328,7 @@ public class UserDao {
 
     /**
      * Check if user is admin
-     * 
+     *
      * @return true if user is admin
      */
     public boolean isUserAdmin(long userId) {
@@ -339,8 +339,9 @@ public class UserDao {
     /**
      * Get active members on a specific date
      * A member is considered active if they have any meal entries on that date
+     * 
      * @param messId The mess ID
-     * @param date The date timestamp (in seconds)
+     * @param date   The date timestamp (in seconds)
      * @return List of User IDs who had meals on that date
      */
     public List<Integer> getActiveMembersByDate(int messId, long date) {
@@ -349,10 +350,10 @@ public class UserDao {
 
         String query = "SELECT DISTINCT userId FROM " + MessKhataDatabase.TABLE_MEALS +
                 " WHERE messId = ? AND mealDate = ? AND (breakfast > 0 OR lunch > 0 OR dinner > 0)";
-        
-        Cursor cursor = db.rawQuery(query, new String[]{
-            String.valueOf(messId),
-            String.valueOf(date)
+
+        Cursor cursor = db.rawQuery(query, new String[] {
+                String.valueOf(messId),
+                String.valueOf(date)
         });
 
         while (cursor.moveToNext()) {
@@ -364,10 +365,12 @@ public class UserDao {
 
     /**
      * Get count of active members for a specific month
-     * Returns count of all active members in the mess who joined before the month ended
+     * Returns count of all active members in the mess who joined before the month
+     * ended
+     * 
      * @param messId The mess ID
-     * @param month The month (1-12)
-     * @param year The year
+     * @param month  The month (1-12)
+     * @param year   The year
      * @return Count of active members
      */
     public int getActiveMemberCount(int messId, int month, int year) {
@@ -382,13 +385,13 @@ public class UserDao {
         long endDate = calendar.getTimeInMillis() / 1000;
 
         // Count all active members who joined before the end of the month
-        String query = "SELECT COUNT(*) as count FROM " + 
+        String query = "SELECT COUNT(*) as count FROM " +
                 MessKhataDatabase.TABLE_USERS +
                 " WHERE messId = ? AND isActive = 1 AND joinedDate < ?";
-        
-        Cursor cursor = db.rawQuery(query, new String[]{
-            String.valueOf(messId),
-            String.valueOf(endDate)
+
+        Cursor cursor = db.rawQuery(query, new String[] {
+                String.valueOf(messId),
+                String.valueOf(endDate)
         });
 
         int count = 0;
@@ -397,5 +400,51 @@ public class UserDao {
         }
         cursor.close();
         return count;
+    }
+
+    /**
+     * Add or update a user from sync
+     * Used for syncing users from Firebase to local database
+     * 
+     * @return true if successful
+     */
+    public boolean addOrUpdateUser(long userId, String fullName, String email,
+            String phoneNumber, int messId, String role, long joinedDate) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        try {
+            // Check if user already exists by email (email is unique)
+            String checkQuery = "SELECT userId FROM " + MessKhataDatabase.TABLE_USERS +
+                    " WHERE email = ?";
+            Cursor cursor = db.rawQuery(checkQuery, new String[] { email });
+
+            ContentValues values = new ContentValues();
+            values.put("fullName", fullName);
+            values.put("phoneNumber", phoneNumber);
+            values.put("messId", messId);
+            values.put("role", role);
+            values.put("isActive", 1);
+
+            boolean success;
+            if (cursor.moveToFirst()) {
+                // Update existing user
+                int existingId = cursor.getInt(0);
+                int rows = db.update(MessKhataDatabase.TABLE_USERS, values,
+                        "userId = ?", new String[] { String.valueOf(existingId) });
+                success = rows > 0;
+            } else {
+                // Insert new user (from remote)
+                values.put("email", email);
+                values.put("joinedDate", joinedDate);
+                values.put("password", ""); // Remote users don't have password locally
+                long result = db.insert(MessKhataDatabase.TABLE_USERS, null, values);
+                success = result != -1;
+            }
+            cursor.close();
+            return success;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

@@ -37,7 +37,7 @@ public class PreferenceManager {
 
     // User Session Management
     public void saveUserSession(String userId, String messId, String role,
-                                 String name, String email) {
+            String name, String email) {
         preferences.edit()
                 .putString(Constants.PREF_USER_ID, userId)
                 .putString(Constants.PREF_MESS_ID, messId)
@@ -56,6 +56,17 @@ public class PreferenceManager {
                 .remove(Constants.PREF_USER_NAME)
                 .remove(Constants.PREF_USER_EMAIL)
                 .putBoolean(Constants.PREF_IS_LOGGED_IN, false)
+                .apply();
+    }
+
+    /**
+     * Clear only mess-related session data (used when leaving a mess)
+     * Keeps user logged in but removes mess association
+     */
+    public void clearMessSession() {
+        preferences.edit()
+                .remove(Constants.PREF_MESS_ID)
+                .remove(Constants.PREF_USER_ROLE)
                 .apply();
     }
 

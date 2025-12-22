@@ -19,6 +19,7 @@ import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.User;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.utils.PreferenceManager;
 
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public class MessSetupActivity extends AppCompatActivity {
     private UserDao userDao;
     private PreferenceManager prefManager;
     private FirebaseFirestore firestore;
+    private SyncManager syncManager;
     private long userId;
 
     private MaterialButton btnCreateMess;
@@ -54,6 +56,9 @@ public class MessSetupActivity extends AppCompatActivity {
 
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
+
+        // Initialize SyncManager
+        syncManager = SyncManager.getInstance(this);
 
         // Get PreferenceManager and userId
         prefManager = PreferenceManager.getInstance(this);
@@ -181,6 +186,10 @@ public class MessSetupActivity extends AppCompatActivity {
                                 User user = userDao.getUserByIdAsObject((int) userId);
 
                                 if (user != null) {
+                                    // Sync user to Firebase (they're now the admin of this mess)
+                                    // Pass firebaseMessId so it's stored with the user
+                                    syncManager.syncUserImmediate(user, firebaseMessId);
+
                                     prefManager.saveUserSession(
                                             String.valueOf(userId),
                                             String.valueOf(localMessId),
@@ -289,19 +298,114 @@ public class MessSetupActivity extends AppCompatActivity {
         final double finalCookingCharge = cookingCharge;
         final long finalCreatedDate = createdDate;
 
-        // Create/update mess in local database
+        // First, check if user already exists in Firebase with a role for this mess
+        User currentUser = userDao.getUserByIdAsObject((int) userId);
+        if (currentUser == null) {
+            showLoading(false);
+            Toast.makeText(this, "Error loading user data", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        firestore.collection("users")
+                .whereEqualTo("email", currentUser.getEmail())
+                .whereEqualTo("firebaseMessId", firebaseMessId)
+                .get()
+                .addOnSuccessListener(userSnapshot -> {
+                    // Check if user was previously in this mess with a role
+                    String existingRole = "member"; // Default to member
+                    if (!userSnapshot.isEmpty()) {
+                        DocumentSnapshot existingUserDoc = userSnapshot.getDocuments().get(0);
+                        String savedRole = existingUserDoc.getString("role");
+                        if (savedRole != null && !savedRole.isEmpty()) {
+                            existingRole = savedRole;
+                            Log.d(TAG, "User previously had role: " + existingRole);
+                        }
+                    }
+
+                    final String finalRole = existingRole;
+
+                    // Create/update mess in local database
+                    MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+                        // Check if mess already exists locally by firebase ID
+                        int existingMessId = messDao.getMessIdByFirebaseId(firebaseMessId);
+
+                        long localMessId;
+                        if (existingMessId > 0) {
+                            // Mess already exists locally
+                            localMessId = existingMessId;
+                        } else {
+                            // Create mess locally
+                            localMessId = messDao.createMessWithDetails(
+                                    messName, finalGroceryBudget, finalCookingCharge, finalCreatedDate);
+
+                            if (localMessId > 0) {
+                                messDao.saveFirebaseMessId((int) localMessId, firebaseMessId, invitationCode);
+                            }
+                        }
+
+                        if (localMessId > 0) {
+                            // Update user's messId and preserve their role
+                            userDao.updateUserMessId(userId, (int) localMessId);
+                            userDao.updateUserRole(userId, finalRole);
+
+                            final long finalLocalMessId = localMessId;
+                            runOnUiThread(() -> {
+                                showLoading(false);
+
+                                User user = userDao.getUserByIdAsObject((int) userId);
+                                if (user != null) {
+                                    // Sync user to Firebase with firebaseMessId
+                                    syncManager.syncUserImmediate(user, firebaseMessId);
+
+                                    prefManager.saveUserSession(
+                                            String.valueOf(userId),
+                                            String.valueOf(finalLocalMessId),
+                                            finalRole.toUpperCase(),
+                                            user.getFullName(),
+                                            user.getEmail());
+
+                                    Toast.makeText(this, "Joined mess successfully!", Toast.LENGTH_SHORT).show();
+
+                                    Intent intent = new Intent(MessSetupActivity.this, MainActivity.class);
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                    startActivity(intent);
+                                    finish();
+                                } else {
+                                    Toast.makeText(this, "Error loading user data", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } else {
+                            runOnUiThread(() -> {
+                                showLoading(false);
+                                Toast.makeText(this, "Failed to join mess locally", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error checking existing user role", e);
+                    // Fall back to member role on error
+                    joinMessWithRole(messDoc, invitationCode, firebaseMessId, messName,
+                            finalGroceryBudget, finalCookingCharge, finalCreatedDate, "member");
+                });
+    }
+
+    /**
+     * Join mess with a specific role (fallback method)
+     */
+    private void joinMessWithRole(DocumentSnapshot messDoc, String invitationCode,
+            String firebaseMessId, String messName,
+            double groceryBudget, double cookingCharge,
+            long createdDate, String role) {
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
-            // Check if mess already exists locally by firebase ID
             int existingMessId = messDao.getMessIdByFirebaseId(firebaseMessId);
 
             long localMessId;
             if (existingMessId > 0) {
-                // Mess already exists locally
                 localMessId = existingMessId;
             } else {
-                // Create mess locally
                 localMessId = messDao.createMessWithDetails(
-                        messName, finalGroceryBudget, finalCookingCharge, finalCreatedDate);
+                        messName, groceryBudget, cookingCharge, createdDate);
 
                 if (localMessId > 0) {
                     messDao.saveFirebaseMessId((int) localMessId, firebaseMessId, invitationCode);
@@ -309,19 +413,21 @@ public class MessSetupActivity extends AppCompatActivity {
             }
 
             if (localMessId > 0) {
-                // Update user's messId and role
                 userDao.updateUserMessId(userId, (int) localMessId);
-                userDao.updateUserRole(userId, "member");
+                userDao.updateUserRole(userId, role);
 
+                final long finalLocalMessId = localMessId;
                 runOnUiThread(() -> {
                     showLoading(false);
 
                     User user = userDao.getUserByIdAsObject((int) userId);
                     if (user != null) {
+                        syncManager.syncUserImmediate(user, firebaseMessId);
+
                         prefManager.saveUserSession(
                                 String.valueOf(userId),
-                                String.valueOf(localMessId),
-                                "MEMBER",
+                                String.valueOf(finalLocalMessId),
+                                role.toUpperCase(),
                                 user.getFullName(),
                                 user.getEmail());
 
