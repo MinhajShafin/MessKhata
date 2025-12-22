@@ -26,10 +26,12 @@ public class ExpenseDao {
     /**
      * Add new expense
      * @param expenseDate Date in milliseconds (will be converted to seconds for storage)
+     * @param memberCountAtTime Number of active members when expense was created
      * @return expenseId if successful, -1 if failed
      */
     public long addExpense(int messId, int addedBy, String category, 
-                          double amount, String title, String description, long expenseDate) {
+                          double amount, String title, String description, 
+                          long expenseDate, int memberCountAtTime) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         try {
@@ -41,6 +43,7 @@ public class ExpenseDao {
             values.put("title", title);
             values.put("description", description);
             values.put("expenseDate", expenseDate / 1000); // Convert milliseconds to seconds
+            values.put("memberCountAtTime", memberCountAtTime);
             values.put("createdAt", System.currentTimeMillis() / 1000);
             values.put("updatedAt", System.currentTimeMillis() / 1000);
 
@@ -90,6 +93,7 @@ public class ExpenseDao {
                 cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("memberCountAtTime")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
             );
             expense.setAddedByName(cursor.getString(cursor.getColumnIndexOrThrow("addedByName")));
@@ -141,6 +145,7 @@ public class ExpenseDao {
                 cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("memberCountAtTime")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
             );
             expense.setAddedByName(cursor.getString(cursor.getColumnIndexOrThrow("addedByName")));
@@ -244,6 +249,7 @@ public class ExpenseDao {
                 cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("memberCountAtTime")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
             );
             expense.setAddedByName(cursor.getString(cursor.getColumnIndexOrThrow("addedByName")));
@@ -322,6 +328,73 @@ public class ExpenseDao {
         }
         cursor.close();
         return total;
+    }
+
+    /**
+     * Get cumulative total expenses from user's join date to current date
+     * Used for dashboard to show all expenses since user joined
+     * @param messId The mess ID
+     * @param userJoinDate User's join date in seconds (Unix timestamp)
+     * @return Total expense amount since join date
+     */
+    public double getCumulativeExpensesFromJoinDate(int messId, long userJoinDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        long currentDate = System.currentTimeMillis() / 1000;
+
+        String query = "SELECT SUM(amount) as total FROM " + 
+                MessKhataDatabase.TABLE_EXPENSES +
+                " WHERE messId = ? AND expenseDate >= ? AND expenseDate <= ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(userJoinDate),
+            String.valueOf(currentDate)
+        });
+
+        double total = 0.0;
+        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            total = cursor.getDouble(0);
+        }
+        cursor.close();
+        return total;
+    }
+
+    /**
+     * Get accurate user share of cumulative expenses from join date to current date
+     * Uses memberCountAtTime stored with each expense for precise calculation
+     * @param messId The mess ID
+     * @param userJoinDate User's join date in seconds (Unix timestamp)
+     * @return User's share of expenses since join date
+     */
+    public double getAccurateUserShareOfExpenses(int messId, long userJoinDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        long currentDate = System.currentTimeMillis() / 1000;
+
+        // Get all expenses since user joined with their memberCountAtTime
+        String query = "SELECT amount, memberCountAtTime FROM " + 
+                MessKhataDatabase.TABLE_EXPENSES +
+                " WHERE messId = ? AND expenseDate >= ? AND expenseDate <= ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(userJoinDate),
+            String.valueOf(currentDate)
+        });
+
+        double userShare = 0.0;
+        while (cursor.moveToNext()) {
+            double amount = cursor.getDouble(0);
+            int memberCount = cursor.getInt(1);
+            
+            // Calculate user's share of this expense
+            if (memberCount > 0) {
+                userShare += (amount / memberCount);
+            }
+        }
+        cursor.close();
+        return userShare;
     }
 }
 

@@ -303,6 +303,36 @@ public class MealDao {
     }
 
     /**
+     * Get cumulative meal expense from user's join date to current date
+     * Used for dashboard to show all meal expenses since user joined
+     * @param userId The user ID
+     * @param userJoinDate User's join date in seconds (Unix timestamp)
+     * @return Total meal expense since join date
+     */
+    public double getCumulativeMealExpenseFromJoinDate(int userId, long userJoinDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        long currentDate = System.currentTimeMillis() / 1000;
+
+        String query = "SELECT SUM((breakfast + lunch + dinner) * mealRate) as totalExpense FROM " +
+                MessKhataDatabase.TABLE_MEALS +
+                " WHERE userId = ? AND mealDate >= ? AND mealDate <= ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+                String.valueOf(userId),
+                String.valueOf(userJoinDate),
+                String.valueOf(currentDate)
+        });
+
+        double totalExpense = 0.0;
+        if (cursor.moveToFirst()) {
+            totalExpense = cursor.getDouble(cursor.getColumnIndexOrThrow("totalExpense"));
+        }
+        cursor.close();
+        return totalExpense;
+    }
+
+    /**
      * Get all active meal preferences for a specific mess
      * Returns the most recent preference for each user
      * Used by MealAutoChargeService for automatic daily charging

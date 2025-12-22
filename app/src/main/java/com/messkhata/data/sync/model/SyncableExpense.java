@@ -25,7 +25,8 @@ public class SyncableExpense extends Expense implements SyncableEntity {
     public SyncableExpense(Expense expense) {
         super(expense.getExpenseId(), expense.getMessId(), expense.getAddedBy(),
                 expense.getCategory(), expense.getAmount(), expense.getTitle(),
-                expense.getDescription(), expense.getExpenseDate(), expense.getCreatedAt());
+                expense.getDescription(), expense.getExpenseDate(),
+                expense.getMemberCountAtTime(), expense.getCreatedAt());
         this.lastModified = System.currentTimeMillis();
     }
 
@@ -75,6 +76,7 @@ public class SyncableExpense extends Expense implements SyncableEntity {
         map.put("title", getTitle());
         map.put("description", getDescription());
         map.put("expenseDate", getExpenseDate());
+        map.put("memberCountAtTime", getMemberCountAtTime());
         map.put("createdAt", getCreatedAt());
         map.put("lastModified", lastModified);
         return map;
@@ -115,6 +117,9 @@ public class SyncableExpense extends Expense implements SyncableEntity {
         }
         if (data.containsKey("expenseDate")) {
             expense.setExpenseDate(((Number) data.get("expenseDate")).longValue());
+        }
+        if (data.containsKey("memberCountAtTime")) {
+            expense.setMemberCountAtTime(((Number) data.get("memberCountAtTime")).intValue());
         }
         if (data.containsKey("createdAt")) {
             expense.setCreatedAt(((Number) data.get("createdAt")).longValue());

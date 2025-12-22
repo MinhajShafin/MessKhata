@@ -11,7 +11,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
 
     // Database Info
     private static final String DATABASE_NAME = "MessManager.db";
-    private static final int DATABASE_VERSION = 4;  // Updated for title field in Expenses
+    private static final int DATABASE_VERSION = 5;  // Updated for memberCountAtTime field in Expenses
 
     // Table Names
     public static final String TABLE_USERS = "Users";
@@ -121,6 +121,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "title TEXT NOT NULL, " +
                     "description TEXT, " +
                     "expenseDate INTEGER NOT NULL, " +
+                    "memberCountAtTime INTEGER NOT NULL DEFAULT 1, " +
                     "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "updatedAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +

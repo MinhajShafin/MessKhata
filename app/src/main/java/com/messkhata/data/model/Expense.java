@@ -12,6 +12,7 @@ public class Expense {
     private String title; // Expense title (e.g., "Weekly Groceries")
     private String description; // Additional details (optional)
     private long expenseDate; // Unix timestamp
+    private int memberCountAtTime; // Number of active members when expense was created
     private long createdAt; // Unix timestamp
     private String addedByName; // Name of person who added (for display)
 
@@ -20,7 +21,8 @@ public class Expense {
     }
 
     public Expense(int expenseId, int messId, int addedBy, String category, 
-                   double amount, String title, String description, long expenseDate, long createdAt) {
+                   double amount, String title, String description, long expenseDate, 
+                   int memberCountAtTime, long createdAt) {
         this.expenseId = expenseId;
         this.messId = messId;
         this.addedBy = addedBy;
@@ -29,6 +31,7 @@ public class Expense {
         this.title = title;
         this.description = description;
         this.expenseDate = expenseDate;
+        this.memberCountAtTime = memberCountAtTime;
         this.createdAt = createdAt;
     }
 
@@ -97,6 +100,14 @@ public class Expense {
         this.expenseDate = expenseDate;
     }
 
+    public int getMemberCountAtTime() {
+        return memberCountAtTime;
+    }
+
+    public void setMemberCountAtTime(int memberCountAtTime) {
+        this.memberCountAtTime = memberCountAtTime;
+    }
+
     public long getCreatedAt() {
         return createdAt;
     }
@@ -138,6 +149,7 @@ public class Expense {
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", expenseDate=" + expenseDate +
+                ", memberCountAtTime=" + memberCountAtTime +
                 ", createdAt=" + createdAt +
                 ", addedByName='" + addedByName + '\'' +
                 '}';

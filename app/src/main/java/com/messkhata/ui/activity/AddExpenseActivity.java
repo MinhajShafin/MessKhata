@@ -16,6 +16,7 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.messkhata.R;
 import com.messkhata.data.dao.ExpenseDao;
+import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.utils.DateUtils;
 import com.messkhata.utils.PreferenceManager;
@@ -39,6 +40,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     
     // DAOs
     private ExpenseDao expenseDao;
+    private UserDao userDao;
     
     // Session data
     private PreferenceManager prefManager;
@@ -79,6 +81,7 @@ public class AddExpenseActivity extends AppCompatActivity {
 
     private void initDAO() {
         expenseDao = new ExpenseDao(this);
+        userDao = new UserDao(this);
     }
 
     private void loadSessionData() {
@@ -177,6 +180,13 @@ public class AddExpenseActivity extends AppCompatActivity {
         // Save expense in background thread
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
+                // Calculate active member count at the time of expense
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(selectedDate);
+                int month = calendar.get(Calendar.MONTH) + 1;
+                int year = calendar.get(Calendar.YEAR);
+                int activeMemberCount = userDao.getActiveMemberCount(messId, month, year);
+                
                 long expenseId = expenseDao.addExpense(
                     messId,
                     userId,
@@ -184,7 +194,8 @@ public class AddExpenseActivity extends AppCompatActivity {
                     amount,
                     title,
                     description,
-                    selectedDate
+                    selectedDate,
+                    activeMemberCount
                 );
 
                 runOnUiThread(() -> {

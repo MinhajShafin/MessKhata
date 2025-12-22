@@ -142,28 +142,22 @@ public class DashboardFragment extends Fragment {
                 int currentMonth = calendar.get(Calendar.MONTH) + 1;
                 int currentYear = calendar.get(Calendar.YEAR);
                 
-                // Get user's total meals this month
+                // Get user's total meals this month (for display)
                 int totalMeals = mealDao.getTotalMealsForMonth((int) userId, currentMonth, currentYear);
-                
-                // Get user's total meal expense (using actual mealRate from Meals table)
-                double totalMealExpense = mealDao.getTotalMealExpense((int) userId, currentMonth, currentYear);
                 
                 // Get user's joined date
                 long userJoinDate = user != null ? user.getJoinedDate() : 0;
                 
-                // Get total expenses that occurred AFTER user joined
-                double userRelevantExpenses = expenseDao.getTotalExpensesAfterDate(messId, userJoinDate, currentMonth, currentYear);
+                // ===== ACCURATE CUMULATIVE CALCULATION =====
+                // Get cumulative meal expense (all meals since user joined)
+                double cumulativeMealExpense = mealDao.getCumulativeMealExpenseFromJoinDate((int) userId, userJoinDate);
                 
-                // Get count of members who were active when those expenses occurred
-                // For simplicity, we'll use current active member count
-                // In a more accurate system, we'd calculate per-expense member count
-                int activeMemberCount = userDao.getActiveMemberCount(messId, currentMonth, currentYear);
+                // Get accurate user share of cumulative expenses using memberCountAtTime
+                // Each expense is divided by the member count when it was created
+                double userSharedExpense = expenseDao.getAccurateUserShareOfExpenses(messId, userJoinDate);
                 
-                // Calculate user's share of expenses (only expenses after they joined)
-                double sharedExpense = (activeMemberCount > 0) ? (userRelevantExpenses / activeMemberCount) : 0.0;
-                
-                // Calculate total expense (meal + shared)
-                double totalExpense = totalMealExpense + sharedExpense;
+                // Calculate total cumulative expense (meal + accurate shared)
+                double totalExpense = cumulativeMealExpense + userSharedExpense;
                 
                 // Get member count
                 List<User> members = userDao.getMembersByMessId(messId);
@@ -174,7 +168,7 @@ public class DashboardFragment extends Fragment {
 
                 // Update UI on main thread
                 requireActivity().runOnUiThread(() -> {
-                    updateUI(user, mess, totalMeals, totalMealExpense, totalExpense, 
+                    updateUI(user, mess, totalMeals, cumulativeMealExpense, totalExpense, 
                             memberCount, mealRate);
                     swipeRefresh.setRefreshing(false);
                 });
