@@ -145,18 +145,19 @@ public class DashboardFragment extends Fragment {
                 // Get user's total meals this month (for display)
                 int totalMeals = mealDao.getTotalMealsForMonth((int) userId, currentMonth, currentYear);
                 
-                // Get user's joined date (kept for potential future use)
+                // Get user's joined date
                 long userJoinDate = user != null ? user.getJoinedDate() : 0;
                 
-                // ===== CUMULATIVE CALCULATION (ALL TIME) =====
-                // Get ALL meal expenses for the user (not filtered by join date)
+                // ===== FAIR EXPENSE CALCULATION =====
+                // Personal meals: ALL meals the user added (meals are personal, not shared)
                 double cumulativeMealExpense = mealDao.getCumulativeMealExpenseFromJoinDate((int) userId, userJoinDate);
                 
-                // Get user's share of ALL shared expenses using memberCountAtTime
-                // Each expense is divided by the member count when it was created
+                // Shared expenses: ONLY expenses added AFTER user joined
+                // Uses memberCountAtTime for accurate per-expense division
+                // New members don't pay for old expenses (fair system)
                 double userSharedExpense = expenseDao.getAccurateUserShareOfExpenses(messId, userJoinDate);
                 
-                // Calculate total expense (meal + shared)
+                // Total: Personal meals + Share of expenses since joining
                 double totalExpense = cumulativeMealExpense + userSharedExpense;
                 
                 // Get member count
