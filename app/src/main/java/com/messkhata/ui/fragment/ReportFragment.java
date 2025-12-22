@@ -164,9 +164,9 @@ public class ReportFragment extends Fragment {
                 List<MemberBalance> balances = reportDao.getMemberBalances(messId, year, month);
                 
                 // Load summary data
-                double totalExpenses = reportDao.getTotalExpenses(messId, year, month);
-                int totalMeals = reportDao.getTotalMeals(messId, year, month);
-                double mealRate = reportDao.calculateMealRate(messId, year, month);
+                double totalExpenses = reportDao.getTotalExpenses(messId, month, year);
+                int totalMeals = reportDao.getTotalMeals(messId, month, year);
+                double mealRate = reportDao.calculateMealRate(messId, month, year);
                 
                 // Load expense breakdown by category
                 double groceryAmount = reportDao.getExpenseByCategory(messId, "Grocery", month, year);
