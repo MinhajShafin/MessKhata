@@ -9,7 +9,8 @@ public class Expense {
     private int addedBy;
     private String category; // grocery, utilities, cleaning, gas, rent, miscellaneous
     private double amount;
-    private String description;
+    private String title; // Expense title (e.g., "Weekly Groceries")
+    private String description; // Additional details (optional)
     private long expenseDate; // Unix timestamp
     private long createdAt; // Unix timestamp
     private String addedByName; // Name of person who added (for display)
@@ -19,12 +20,13 @@ public class Expense {
     }
 
     public Expense(int expenseId, int messId, int addedBy, String category, 
-                   double amount, String description, long expenseDate, long createdAt) {
+                   double amount, String title, String description, long expenseDate, long createdAt) {
         this.expenseId = expenseId;
         this.messId = messId;
         this.addedBy = addedBy;
         this.category = category;
         this.amount = amount;
+        this.title = title;
         this.description = description;
         this.expenseDate = expenseDate;
         this.createdAt = createdAt;
@@ -69,6 +71,14 @@ public class Expense {
 
     public void setAmount(double amount) {
         this.amount = amount;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {
@@ -125,6 +135,7 @@ public class Expense {
                 ", addedBy=" + addedBy +
                 ", category='" + category + '\'' +
                 ", amount=" + amount +
+                ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", expenseDate=" + expenseDate +
                 ", createdAt=" + createdAt +

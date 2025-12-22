@@ -29,7 +29,7 @@ public class ExpenseDao {
      * @return expenseId if successful, -1 if failed
      */
     public long addExpense(int messId, int addedBy, String category, 
-                          double amount, String description, long expenseDate) {
+                          double amount, String title, String description, long expenseDate) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         try {
@@ -38,6 +38,7 @@ public class ExpenseDao {
             values.put("addedBy", addedBy);
             values.put("category", category);
             values.put("amount", amount);
+            values.put("title", title);
             values.put("description", description);
             values.put("expenseDate", expenseDate / 1000); // Convert milliseconds to seconds
             values.put("createdAt", System.currentTimeMillis() / 1000);
@@ -86,6 +87,7 @@ public class ExpenseDao {
                 cursor.getInt(cursor.getColumnIndexOrThrow("addedBy")),
                 cursor.getString(cursor.getColumnIndexOrThrow("category")),
                 cursor.getDouble(cursor.getColumnIndexOrThrow("amount")),
+                cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
@@ -136,6 +138,7 @@ public class ExpenseDao {
                 cursor.getInt(cursor.getColumnIndexOrThrow("addedBy")),
                 cursor.getString(cursor.getColumnIndexOrThrow("category")),
                 cursor.getDouble(cursor.getColumnIndexOrThrow("amount")),
+                cursor.getString(cursor.getColumnIndexOrThrow("title")),
                 cursor.getString(cursor.getColumnIndexOrThrow("description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("expenseDate")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))

@@ -86,8 +86,12 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
         }
 
         public void bind(Expense expense) {
-            // Set category as title
-            tvTitle.setText(getCategoryDisplayName(expense.getCategory()));
+            // Set title, fallback to category if empty
+            String title = expense.getTitle();
+            if (title == null || title.trim().isEmpty()) {
+                title = getCategoryDisplayName(expense.getCategory());
+            }
+            tvTitle.setText(title);
 
             // Format date
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());

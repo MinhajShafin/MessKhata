@@ -11,7 +11,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
 
     // Database Info
     private static final String DATABASE_NAME = "MessManager.db";
-    private static final int DATABASE_VERSION = 3;  // Updated for new schema
+    private static final int DATABASE_VERSION = 4;  // Updated for title field in Expenses
 
     // Table Names
     public static final String TABLE_USERS = "Users";
@@ -118,6 +118,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "addedBy INTEGER NOT NULL, " +
                     "category TEXT NOT NULL, " +
                     "amount REAL NOT NULL, " +
+                    "title TEXT NOT NULL, " +
                     "description TEXT, " +
                     "expenseDate INTEGER NOT NULL, " +
                     "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +

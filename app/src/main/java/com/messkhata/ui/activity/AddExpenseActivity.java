@@ -28,6 +28,7 @@ import java.util.Calendar;
 public class AddExpenseActivity extends AppCompatActivity {
 
     // UI Components
+    private TextInputEditText etTitle;
     private TextInputEditText etDescription;
     private TextInputEditText etAmount;
     private TextView tvSelectedDate;
@@ -62,6 +63,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        etTitle = findViewById(R.id.etTitle);
         etDescription = findViewById(R.id.etDescription);
         etAmount = findViewById(R.id.etAmount);
         tvSelectedDate = findViewById(R.id.tvSelectedDate);
@@ -127,6 +129,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     }
 
     private void saveExpense() {
+        String title = getText(etTitle);
         String description = getText(etDescription);
         String amountStr = getText(etAmount);
 
@@ -136,9 +139,9 @@ public class AddExpenseActivity extends AppCompatActivity {
             return;
         }
 
-        if (description.isEmpty()) {
-            etDescription.setError("Description is required");
-            etDescription.requestFocus();
+        if (title.isEmpty()) {
+            etTitle.setError("Title is required");
+            etTitle.requestFocus();
             return;
         }
 
@@ -179,6 +182,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                     userId,
                     selectedCategory,
                     amount,
+                    title,
                     description,
                     selectedDate
                 );
@@ -205,6 +209,7 @@ public class AddExpenseActivity extends AppCompatActivity {
     private void showLoading(boolean show) {
         progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
         btnSave.setEnabled(!show);
+        etTitle.setEnabled(!show);
         etDescription.setEnabled(!show);
         etAmount.setEnabled(!show);
         cardDate.setEnabled(!show);
