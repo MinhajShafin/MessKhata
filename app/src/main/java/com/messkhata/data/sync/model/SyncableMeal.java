@@ -15,6 +15,7 @@ public class SyncableMeal extends Meal implements SyncableEntity {
     public static final String COLLECTION_NAME = "meals";
 
     private String firebaseId;
+    private String firebaseMessId; // Firebase document ID of the mess
     private SyncStatus syncStatus = SyncStatus.PENDING_UPLOAD;
     private long lastModified;
 
@@ -64,12 +65,21 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         this.lastModified = timestamp;
     }
 
+    public String getFirebaseMessId() {
+        return firebaseMessId;
+    }
+
+    public void setFirebaseMessId(String firebaseMessId) {
+        this.firebaseMessId = firebaseMessId;
+    }
+
     @Override
     public Map<String, Object> toFirebaseMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("mealId", getMealId());
         map.put("userId", getUserId());
         map.put("messId", getMessId());
+        map.put("firebaseMessId", firebaseMessId); // Use this for queries
         map.put("mealDate", getMealDate());
         map.put("breakfast", getBreakfast());
         map.put("lunch", getLunch());
@@ -119,6 +129,9 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         }
         if (data.containsKey("lastModified")) {
             meal.setLastModified(((Number) data.get("lastModified")).longValue());
+        }
+        if (data.containsKey("firebaseMessId")) {
+            meal.setFirebaseMessId((String) data.get("firebaseMessId"));
         }
 
         meal.setSyncStatus(SyncStatus.SYNCED);

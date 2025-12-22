@@ -252,6 +252,9 @@ public class SyncManager {
      */
     private void syncUsersToCloud(int messId) {
         try {
+            // Get firebaseMessId for proper cross-device sync
+            String firebaseMessId = messDao.getFirebaseMessId(messId);
+
             Cursor cursor = userDao.getUsersByMessId(messId);
             if (cursor != null) {
                 while (cursor.moveToNext()) {
@@ -266,6 +269,10 @@ public class SyncManager {
 
                     SyncableUser syncableUser = new SyncableUser(user);
                     syncableUser.setLastModified(System.currentTimeMillis());
+                    // Set firebaseMessId for cross-device sync
+                    if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                        syncableUser.setFirebaseMessId(firebaseMessId);
+                    }
 
                     Task<DocumentReference> task = firebaseRepo.saveUser(syncableUser);
                     Tasks.await(task);
@@ -284,6 +291,9 @@ public class SyncManager {
      */
     private void syncMealsToCloud(int messId) {
         try {
+            // Get firebaseMessId for proper cross-device sync
+            String firebaseMessId = messDao.getFirebaseMessId(messId);
+
             // Get all meals for the mess (we'll need to add a method to MealDao)
             // For now, sync current month's meals
             java.util.Calendar cal = java.util.Calendar.getInstance();
@@ -302,6 +312,10 @@ public class SyncManager {
                     for (Meal meal : meals) {
                         SyncableMeal syncableMeal = new SyncableMeal(meal);
                         syncableMeal.setLastModified(System.currentTimeMillis());
+                        // Set firebaseMessId for cross-device sync
+                        if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                            syncableMeal.setFirebaseMessId(firebaseMessId);
+                        }
                         allMeals.add(syncableMeal);
                     }
                 }
@@ -324,6 +338,9 @@ public class SyncManager {
      */
     private void syncExpensesToCloud(int messId) {
         try {
+            // Get firebaseMessId for proper cross-device sync
+            String firebaseMessId = messDao.getFirebaseMessId(messId);
+
             java.util.Calendar cal = java.util.Calendar.getInstance();
             int currentMonth = cal.get(java.util.Calendar.MONTH) + 1;
             int currentYear = cal.get(java.util.Calendar.YEAR);
@@ -334,6 +351,10 @@ public class SyncManager {
             for (Expense expense : expenses) {
                 SyncableExpense syncableExpense = new SyncableExpense(expense);
                 syncableExpense.setLastModified(System.currentTimeMillis());
+                // Set firebaseMessId for cross-device sync
+                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                    syncableExpense.setFirebaseMessId(firebaseMessId);
+                }
                 syncableExpenses.add(syncableExpense);
             }
 
@@ -354,15 +375,26 @@ public class SyncManager {
         try {
             long lastSync = getLastSyncTimestamp();
 
+            // Get firebaseMessId for proper cross-device sync
+            String firebaseMessId = messDao.getFirebaseMessId(messId);
+            if (firebaseMessId == null || firebaseMessId.isEmpty()) {
+                Log.w(TAG, "No firebaseMessId found for messId: " + messId + ", falling back to local messId");
+                // Fall back to old behavior if firebaseMessId not available
+                downloadRemoteChangesLegacy(messId, lastSync);
+                return;
+            }
+
+            Log.d(TAG, "Downloading remote changes using firebaseMessId: " + firebaseMessId);
+
             // Download meals modified after last sync
-            Task<List<SyncableMeal>> mealsTask = firebaseRepo.getMealsModifiedAfter(messId, lastSync);
+            Task<List<SyncableMeal>> mealsTask = firebaseRepo.getMealsModifiedAfter(firebaseMessId, lastSync);
             List<SyncableMeal> remoteMeals = Tasks.await(mealsTask);
 
             for (SyncableMeal meal : remoteMeals) {
-                // Update local database with remote changes
+                // Update local database with remote changes - use local messId
                 mealDao.addOrUpdateMeal(
                         meal.getUserId(),
-                        meal.getMessId(),
+                        messId, // Use local messId for local database
                         meal.getMealDate(),
                         meal.getBreakfast(),
                         meal.getLunch(),
@@ -372,11 +404,74 @@ public class SyncManager {
             Log.d(TAG, "Downloaded " + remoteMeals.size() + " meals from cloud");
 
             // Download expenses modified after last sync
+            Task<List<SyncableExpense>> expensesTask = firebaseRepo.getExpensesModifiedAfter(firebaseMessId, lastSync);
+            List<SyncableExpense> remoteExpenses = Tasks.await(expensesTask);
+
+            for (SyncableExpense expense : remoteExpenses) {
+                // Save to local database - use local messId
+                expenseDao.addOrUpdateExpense(
+                        expense.getExpenseId(),
+                        messId, // Use local messId for local database
+                        expense.getAddedBy(),
+                        expense.getCategory(),
+                        expense.getAmount(),
+                        expense.getTitle(),
+                        expense.getDescription(),
+                        expense.getExpenseDate(),
+                        expense.getMemberCountAtTime(),
+                        expense.getCreatedAt());
+            }
+            Log.d(TAG, "Downloaded and saved " + remoteExpenses.size() + " expenses from cloud");
+
+            // Download users for this mess using firebaseMessId
+            Task<List<SyncableUser>> usersTask = firebaseRepo.getUsersByFirebaseMessId(firebaseMessId);
+            List<SyncableUser> remoteUsers = Tasks.await(usersTask);
+
+            for (SyncableUser user : remoteUsers) {
+                // Save to local database - use local messId
+                userDao.addOrUpdateUser(
+                        user.getUserId(),
+                        user.getFullName(),
+                        user.getEmail(),
+                        user.getPhoneNumber(),
+                        messId, // Use local messId for local database
+                        user.getRole(),
+                        user.getJoinedDate());
+            }
+            Log.d(TAG, "Downloaded and saved " + remoteUsers.size() + " users from cloud");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error downloading remote changes", e);
+        }
+    }
+
+    /**
+     * Legacy download method using local messId (for backward compatibility)
+     */
+    @SuppressWarnings("deprecation")
+    private void downloadRemoteChangesLegacy(int messId, long lastSync) {
+        try {
+            // Download meals modified after last sync
+            Task<List<SyncableMeal>> mealsTask = firebaseRepo.getMealsModifiedAfter(messId, lastSync);
+            List<SyncableMeal> remoteMeals = Tasks.await(mealsTask);
+
+            for (SyncableMeal meal : remoteMeals) {
+                mealDao.addOrUpdateMeal(
+                        meal.getUserId(),
+                        meal.getMessId(),
+                        meal.getMealDate(),
+                        meal.getBreakfast(),
+                        meal.getLunch(),
+                        meal.getDinner(),
+                        meal.getMealRate());
+            }
+            Log.d(TAG, "[Legacy] Downloaded " + remoteMeals.size() + " meals from cloud");
+
+            // Download expenses modified after last sync
             Task<List<SyncableExpense>> expensesTask = firebaseRepo.getExpensesModifiedAfter(messId, lastSync);
             List<SyncableExpense> remoteExpenses = Tasks.await(expensesTask);
 
             for (SyncableExpense expense : remoteExpenses) {
-                // Save to local database
                 expenseDao.addOrUpdateExpense(
                         expense.getExpenseId(),
                         expense.getMessId(),
@@ -389,14 +484,13 @@ public class SyncManager {
                         expense.getMemberCountAtTime(),
                         expense.getCreatedAt());
             }
-            Log.d(TAG, "Downloaded and saved " + remoteExpenses.size() + " expenses from cloud");
+            Log.d(TAG, "[Legacy] Downloaded and saved " + remoteExpenses.size() + " expenses from cloud");
 
             // Download users for this mess
             Task<List<SyncableUser>> usersTask = firebaseRepo.getUsersByMessId(messId);
             List<SyncableUser> remoteUsers = Tasks.await(usersTask);
 
             for (SyncableUser user : remoteUsers) {
-                // Save to local database
                 userDao.addOrUpdateUser(
                         user.getUserId(),
                         user.getFullName(),
@@ -406,10 +500,10 @@ public class SyncManager {
                         user.getRole(),
                         user.getJoinedDate());
             }
-            Log.d(TAG, "Downloaded and saved " + remoteUsers.size() + " users from cloud");
+            Log.d(TAG, "[Legacy] Downloaded and saved " + remoteUsers.size() + " users from cloud");
 
         } catch (Exception e) {
-            Log.e(TAG, "Error downloading remote changes", e);
+            Log.e(TAG, "Error in legacy download", e);
         }
     }
 
@@ -425,6 +519,12 @@ public class SyncManager {
             try {
                 SyncableMeal syncableMeal = new SyncableMeal(meal);
                 syncableMeal.setLastModified(System.currentTimeMillis());
+
+                // Set firebaseMessId for cross-device sync
+                String firebaseMessId = messDao.getFirebaseMessId(meal.getMessId());
+                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                    syncableMeal.setFirebaseMessId(firebaseMessId);
+                }
 
                 Task<DocumentReference> task = firebaseRepo.saveMeal(syncableMeal);
                 Tasks.await(task);
@@ -449,6 +549,12 @@ public class SyncManager {
                 SyncableExpense syncableExpense = new SyncableExpense(expense);
                 syncableExpense.setLastModified(System.currentTimeMillis());
 
+                // Set firebaseMessId for cross-device sync
+                String firebaseMessId = messDao.getFirebaseMessId(expense.getMessId());
+                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+                    syncableExpense.setFirebaseMessId(firebaseMessId);
+                }
+
                 Task<DocumentReference> task = firebaseRepo.saveExpense(syncableExpense);
                 Tasks.await(task);
 
@@ -468,7 +574,7 @@ public class SyncManager {
 
     /**
      * Sync a single user immediately with firebaseMessId
-     * 
+     *
      * @param user           The user to sync
      * @param firebaseMessId The Firebase document ID of the mess (optional)
      */
