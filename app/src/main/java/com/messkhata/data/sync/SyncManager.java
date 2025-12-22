@@ -366,7 +366,8 @@ public class SyncManager {
                         meal.getMealDate(),
                         meal.getBreakfast(),
                         meal.getLunch(),
-                        meal.getDinner());
+                        meal.getDinner(),
+                        meal.getMealRate());
             }
             Log.d(TAG, "Downloaded " + remoteMeals.size() + " meals from cloud");
 

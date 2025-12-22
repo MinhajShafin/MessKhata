@@ -25,7 +25,7 @@ public class SyncableMeal extends Meal implements SyncableEntity {
     public SyncableMeal(Meal meal) {
         super(meal.getMealId(), meal.getUserId(), meal.getMessId(),
                 meal.getMealDate(), meal.getBreakfast(), meal.getLunch(),
-                meal.getDinner());
+                meal.getDinner(), meal.getMealRate());
         this.lastModified = System.currentTimeMillis();
     }
 
@@ -75,6 +75,8 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         map.put("lunch", getLunch());
         map.put("dinner", getDinner());
         map.put("totalMeals", getTotalMeals());
+        map.put("mealRate", getMealRate());
+        map.put("mealExpense", getMealExpense());
         map.put("lastModified", lastModified);
         return map;
     }
@@ -111,6 +113,9 @@ public class SyncableMeal extends Meal implements SyncableEntity {
         }
         if (data.containsKey("dinner")) {
             meal.setDinner(((Number) data.get("dinner")).intValue());
+        }
+        if (data.containsKey("mealRate")) {
+            meal.setMealRate(((Number) data.get("mealRate")).doubleValue());
         }
         if (data.containsKey("lastModified")) {
             meal.setLastModified(((Number) data.get("lastModified")).longValue());
