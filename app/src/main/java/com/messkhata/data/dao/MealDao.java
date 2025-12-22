@@ -303,10 +303,10 @@ public class MealDao {
     }
 
     /**
-     * Get cumulative meal expense from user's join date to current date
-     * Used for dashboard to show all meal expenses since user joined
+     * Get cumulative meal expense for all user's meals
+     * Meals are personal expenses that belong to the user regardless of join date
      * @param userId The user ID
-     * @param userJoinDate User's join date in seconds (Unix timestamp) - NOT USED, shows all meals
+     * @param userJoinDate User's join date (not used, kept for compatibility)
      * @return Total meal expense for all user's meals
      */
     public double getCumulativeMealExpenseFromJoinDate(int userId, long userJoinDate) {

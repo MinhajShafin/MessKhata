@@ -45,6 +45,9 @@ public class UserDao {
             values.put("password", password); // Hash in production!
             values.put("role", "member");
             values.put("isActive", 1);
+            
+            // Use exact join time for fair expense distribution
+            // This prevents same-day joiners from seeing earlier expenses
             values.put("joinedDate", System.currentTimeMillis() / 1000);
 
             long result = db.insert(MessKhataDatabase.TABLE_USERS, null, values);
