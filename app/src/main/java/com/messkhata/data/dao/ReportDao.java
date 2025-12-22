@@ -27,44 +27,51 @@ public class ReportDao {
     }
 
     /**
-     * Get member balances for a specific month
-     * Calculates bill, payments, and due for each member
-     * @return List of MemberBalance objects
+     * Get member expense summary (all-time cumulative)
+     * Shows each member's total meals and total expenses since they joined
+     * @return List of MemberBalance objects with cumulative data
      */
     public List<MemberBalance> getMemberBalances(int messId, int month, int year) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         List<MemberBalance> balances = new ArrayList<>();
 
         // Get all members of the mess
-        String query = "SELECT userId, fullName FROM " + MessKhataDatabase.TABLE_USERS +
-                " WHERE messId = ? AND isActive = 1";
+        String query = "SELECT userId, fullName, joinedDate FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE messId = ? AND isActive = 1 ORDER BY fullName ASC";
         Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(messId)});
 
         while (cursor.moveToNext()) {
             long userId = cursor.getLong(0);
             String fullName = cursor.getString(1);
+            long joinedDate = cursor.getLong(2);
 
-            // Get total meals for this user
-            int totalMeals = mealDao.getTotalMealsForMonth((int) userId, month, year);
+            // Get ALL-TIME total meals for this user (cumulative)
+            String mealQuery = "SELECT SUM(breakfast + lunch + dinner) as total FROM " +
+                    MessKhataDatabase.TABLE_MEALS + " WHERE userId = ?";
+            Cursor mealCursor = db.rawQuery(mealQuery, new String[]{String.valueOf(userId)});
+            int totalMeals = 0;
+            if (mealCursor.moveToFirst() && !mealCursor.isNull(0)) {
+                totalMeals = mealCursor.getInt(0);
+            }
+            mealCursor.close();
 
-            // For now, use estimated bill (actual calculation will be done in month-end)
-            // Get mess rates
-            double mealRate = getEstimatedMealRate(messId);
-            double mealCost = totalMeals * mealRate;
+            // Get cumulative meal expense (all user's meals)
+            double mealExpense = mealDao.getCumulativeMealExpenseFromJoinDate((int) userId, joinedDate);
 
-            // Get shared expenses (utilities, cleaning, gas, rent, misc)
-            double sharedExpenses = getSharedExpensesPerMember(messId, month, year);
+            // Get user's share of shared expenses (only expenses after they joined)
+            double sharedExpense = expenseDao.getAccurateUserShareOfExpenses(messId, joinedDate);
 
-            double totalBill = mealCost + sharedExpenses;
+            // Total expense = meal expense + shared expense
+            double totalExpense = mealExpense + sharedExpense;
 
-            // Get total paid (from payments table - for now 0)
-            double totalPaid = getTotalPaid(userId, messId, month, year);
+            // For now, totalPaid is 0 (payment tracking can be added later)
+            double totalPaid = 0.0;
 
             MemberBalance balance = new MemberBalance(
                 userId,
                 fullName,
                 totalMeals,
-                totalBill,
+                totalExpense,
                 totalPaid
             );
             balances.add(balance);
