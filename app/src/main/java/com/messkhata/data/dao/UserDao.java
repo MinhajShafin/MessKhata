@@ -45,7 +45,14 @@ public class UserDao {
             values.put("password", password); // Hash in production!
             values.put("role", "member");
             values.put("isActive", 1);
-            values.put("joinedDate", System.currentTimeMillis() / 1000);
+            
+            // Normalize joinedDate to midnight (00:00:00) to match meal/expense dates
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            values.put("joinedDate", cal.getTimeInMillis() / 1000);
 
             long result = db.insert(MessKhataDatabase.TABLE_USERS, null, values);
             return result != -1;
