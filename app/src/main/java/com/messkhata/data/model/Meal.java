@@ -12,6 +12,8 @@ public class Meal {
     private int lunch;
     private int dinner;
     private int totalMeals; // breakfast + lunch + dinner
+    private double mealRate; // Fixed rate at time of consumption
+    private double mealExpense; // totalMeals × mealRate
 
     // Constructor
     public Meal() {
@@ -27,6 +29,22 @@ public class Meal {
         this.lunch = lunch;
         this.dinner = dinner;
         this.totalMeals = breakfast + lunch + dinner;
+        this.mealRate = 50.00; // Default rate
+        this.mealExpense = this.totalMeals * this.mealRate;
+    }
+
+    public Meal(int mealId, int userId, int messId, long mealDate, 
+                int breakfast, int lunch, int dinner, double mealRate) {
+        this.mealId = mealId;
+        this.userId = userId;
+        this.messId = messId;
+        this.mealDate = mealDate;
+        this.breakfast = breakfast;
+        this.lunch = lunch;
+        this.dinner = dinner;
+        this.totalMeals = breakfast + lunch + dinner;
+        this.mealRate = mealRate;
+        this.mealExpense = this.totalMeals * this.mealRate;
     }
 
     // Getters and Setters
@@ -93,9 +111,28 @@ public class Meal {
         return totalMeals;
     }
 
+    public double getMealRate() {
+        return mealRate;
+    }
+
+    public void setMealRate(double mealRate) {
+        this.mealRate = mealRate;
+        updateMealExpense();
+    }
+
+    public double getMealExpense() {
+        return mealExpense;
+    }
+
     // Helper method to update total meals
     private void updateTotalMeals() {
         this.totalMeals = breakfast + lunch + dinner;
+        updateMealExpense();
+    }
+
+    // Helper method to update meal expense
+    private void updateMealExpense() {
+        this.mealExpense = this.totalMeals * this.mealRate;
     }
 
     @Override
@@ -109,6 +146,8 @@ public class Meal {
                 ", lunch=" + lunch +
                 ", dinner=" + dinner +
                 ", totalMeals=" + totalMeals +
+                ", mealRate=" + mealRate +
+                ", mealExpense=" + mealExpense +
                 '}';
     }
 }

@@ -15,28 +15,39 @@ MessKhata is a shared living expense tracking application for students, working 
 ### 2. Meal Pricing Model (Key Feature)
 - **Fixed Rate** = Grocery Budget + Cooking Charge
 - **Example:** 50 TK = 40 TK (grocery) + 10 TK (cooking)
-- **During the month:** Users see fixed rate (e.g., 50 TK/meal)
-- **End of month:** Final rate adjusts based on actual grocery spending
-  - If groceries cost more → rate increases (e.g., 52 TK/meal)
-  - If groceries cost less → rate decreases (e.g., 48 TK/meal)
-- **Cooking charge stays fixed, only grocery varies**
+- **Rate is FIXED throughout the month** - no adjustment at month-end
+- Admin sets the meal rate (e.g., 50 TK/meal)
+- When user consumes meals, the cost is added to their personal expense immediately
+- **Example:** User eats 3 meals (breakfast, lunch, dinner) = 3 × 50 TK = 150 TK added to personal expense
 
 ### 3. Expense Distribution Rules
-- **Grocery expenses:** Distributed per meal consumption
-- **Utilities/Cleaning/Miscellaneous:** Split equally among all active members
-- **Calculation:** `shareAmount = totalExpense / numberOfMembers`
+- **Meal expenses:** Charged per meal at fixed rate (set by admin)
+  - Each meal consumed adds: (groceryRate + cookingCharge) to personal expense
+  - Example: 3 meals × 50 TK = 150 TK added immediately
+- **All other expenses (Grocery, Utilities, Cleaning, Gas, Rent, Miscellaneous):**
+  - Any member can add these expenses
+  - Expenses are added to mess total expenses
+  - **Automatically split equally among ALL active members**
+  - Each member's share: `shareAmount = totalExpense / numberOfMembers`
+  - Individual share is added to each member's personal total expense dynamically
 
-### 4. Meal Preference Auto-Carry
-- Users set meal preferences (e.g., Breakfast: 1, Lunch: 1, Dinner: 0)
-- **If preference is set before today, it will automatically apply from tomorrow onwards**
-- Users can edit any day's meal count manually
+### 4. Meal Preference Auto-Charge
+- Users set meal preferences (e.g., Breakfast: 1, Lunch: 1, Dinner: 1)
+- **When preference is set TODAY:**
+  - Meal expense for today is charged IMMEDIATELY (e.g., 3 meals × 50 TK = 150 TK)
+  - Preference applies from tomorrow onwards automatically
+- **From tomorrow onwards:**
+  - If user doesn't change preference, same meals are auto-charged daily (e.g., 150 TK/day)
+  - User can manually edit any day's meal count
 - System continues using the last set preference until changed
 
 ### 5. Mid-Month Join Handling
 - **User joins on 15th of the month:**
-  - **Meal billing:** Counted only from days they registered meals (per meal basis)
-  - **Fixed expenses (utilities/cleaning/misc):** Split equally among total member count for the entire month
-  - System treats them as a member from day 1 for expense splitting purposes
+  - **Meal expenses:** Charged only for meals they consume from join date onwards
+  - **All other expenses (grocery/utilities/cleaning/gas/rent/misc):**
+    - User is counted in member count from join date onwards
+    - Only expenses added AFTER join date are split with this user
+    - Past expenses (before join date) are split among members who were active then
 
 ### 6. Mess ID & Invitation Code
 - **messId:** Auto-increment primary key
@@ -98,10 +109,12 @@ CREATE TABLE Mess (
 - `messId` - Primary key, auto-increment
 - `messName` - Name of the mess (e.g., "Room 301 Mess")
 - `invitationCode` - Unique 6-digit numeric code for joining mess
-- `groceryBudgetPerMeal` - Target grocery cost per meal (TK)
-- `cookingChargePerMeal` - Fixed cooking charge per meal (TK)
+- `groceryBudgetPerMeal` - Fixed grocery rate per meal (TK) - set by admin
+- `cookingChargePerMeal` - Fixed cooking charge per meal (TK) - set by admin
 - `createdDate` - When mess was created
 - `isActive` - Whether mess is active
+
+**Note:** Total meal rate = groceryBudgetPerMeal + cookingChargePerMeal (e.g., 40 + 10 = 50 TK/meal)
 
 ---
 
@@ -137,8 +150,9 @@ CREATE TABLE Expenses (
 - `updatedAt` - When record was last modified
 
 **Note:** 
-- Grocery expenses affect per-meal rate calculation
-- Utilities/Cleaning/Gas/Rent/Miscellaneous are split equally among members
+- All expenses (grocery/utilities/cleaning/gas/rent/miscellaneous) are split equally among active members
+- When any member adds an expense, it is automatically distributed to all members
+- Each member's share = totalExpense / numberOfMembers
 
 ---
 
@@ -155,6 +169,8 @@ CREATE TABLE Meals (
     lunch           INT DEFAULT 1,
     dinner          INT DEFAULT 1,
     totalMeals      INT GENERATED ALWAYS AS (breakfast + lunch + dinner) STORED,
+    mealRate        DECIMAL(10, 2) NOT NULL,  -- Fixed rate at time of consumption
+    mealExpense     DECIMAL(10, 2) GENERATED ALWAYS AS (totalMeals * mealRate) STORED,
     createdAt       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -173,6 +189,8 @@ CREATE TABLE Meals (
 - `lunch` - Number of lunches
 - `dinner` - Number of dinners
 - `totalMeals` - Auto-calculated (breakfast + lunch + dinner)
+- `mealRate` - Fixed meal rate at time of consumption (groceryBudget + cookingCharge)
+- `mealExpense` - Auto-calculated (totalMeals × mealRate) - added to personal expense
 - `createdAt` - When record was created
 - `updatedAt` - When record was last modified
 - **UNIQUE constraint:** One record per user per day
@@ -207,13 +225,15 @@ CREATE TABLE MealPreferences (
 - `createdAt` - When preference was set
 
 **Logic:**
-- If preference is set today, it applies from tomorrow onwards
-- System auto-creates Meals records based on preference if user doesn't manually enter
+- When preference is set today, meal expense for today is charged immediately
+- Preference applies from tomorrow onwards automatically
+- System auto-creates Meals records and charges based on preference daily
+- User can manually edit any day's meal count
 
 ---
 
 ### 6. MessMonthlyStats Table
-Stores month-end calculations and statistics for each mess.
+Stores monthly statistics and totals for each mess (for reporting purposes).
 
 ```sql
 CREATE TABLE MessMonthlyStats (
@@ -222,7 +242,7 @@ CREATE TABLE MessMonthlyStats (
     month                   INT NOT NULL,  -- 1-12
     year                    INT NOT NULL,  -- 2024, 2025, etc.
     
-    -- Expense totals
+    -- Expense totals (sum of all expenses added)
     totalGrocery            DECIMAL(10, 2) DEFAULT 0.00,
     totalUtilities          DECIMAL(10, 2) DEFAULT 0.00,
     totalCleaning           DECIMAL(10, 2) DEFAULT 0.00,
@@ -231,22 +251,12 @@ CREATE TABLE MessMonthlyStats (
     totalMiscellaneous      DECIMAL(10, 2) DEFAULT 0.00,
     
     -- Meal statistics
-    totalMeals              INT DEFAULT 0,  -- All members combined
+    totalMealExpenses       DECIMAL(10, 2) DEFAULT 0.00,  -- All members' meal expenses combined
+    totalMealsConsumed      INT DEFAULT 0,  -- All members' meals combined
     numberOfMembers         INT NOT NULL,
     
-    -- Calculated rates
-    finalGroceryRate        DECIMAL(10, 2) GENERATED ALWAYS AS (
-        CASE WHEN totalMeals > 0 THEN totalGrocery / totalMeals ELSE 0 END
-    ) STORED,
-    cookingCharge           DECIMAL(10, 2) NOT NULL,
-    finalMealRate           DECIMAL(10, 2) GENERATED ALWAYS AS (
-        CASE WHEN totalMeals > 0 THEN (totalGrocery / totalMeals) + cookingCharge ELSE 0 END
-    ) STORED,
-    
-    -- Status
-    isFinalized             BOOLEAN DEFAULT FALSE,
-    finalizedDate           TIMESTAMP NULL,
     createdAt               TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt               TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (messId) REFERENCES Mess(messId) ON DELETE CASCADE,
     UNIQUE KEY unique_mess_month (messId, month, year)
@@ -258,26 +268,63 @@ CREATE TABLE MessMonthlyStats (
 - `messId` - Which mess
 - `month` - Month number (1-12)
 - `year` - Year (2024, 2025)
-- `totalGrocery` - Sum of all grocery expenses for the month
-- `totalUtilities` - Sum of all utilities expenses
-- `totalCleaning` - Sum of all cleaning expenses
-- `totalGas` - Sum of all gas expenses
-- `totalRent` - Sum of all rent expenses
-- `totalMiscellaneous` - Sum of all miscellaneous expenses
-- `totalMeals` - Total meals consumed by all members
+- `totalGrocery` - Sum of all grocery expenses added this month
+- `totalUtilities` - Sum of all utilities expenses added this month
+- `totalCleaning` - Sum of all cleaning expenses added this month
+- `totalGas` - Sum of all gas expenses added this month
+- `totalRent` - Sum of all rent expenses added this month
+- `totalMiscellaneous` - Sum of all miscellaneous expenses added this month
+- `totalMealExpenses` - Sum of all members' meal expenses for the month
+- `totalMealsConsumed` - Total meals consumed by all members
 - `numberOfMembers` - Number of active members that month
-- `finalGroceryRate` - Auto-calculated: totalGrocery / totalMeals
-- `cookingCharge` - Cooking charge (copied from Mess table)
-- `finalMealRate` - Auto-calculated: finalGroceryRate + cookingCharge
-- `isFinalized` - Whether month is closed
-- `finalizedDate` - When month was finalized
 - `createdAt` - When record was created
+- `updatedAt` - When record was last modified
 - **UNIQUE constraint:** One record per mess per month
+
+**Note:** This table is for reporting/statistics only. Actual expenses are tracked in real-time.
 
 ---
 
-### 7. MonthlyBills Table
-Stores individual member bills for each month.
+### 7. PersonalExpenses Table
+Tracks each user's personal expense ledger in real-time.
+
+```sql
+CREATE TABLE PersonalExpenses (
+    personalExpenseId   INT PRIMARY KEY AUTO_INCREMENT,
+    userId              INT NOT NULL,
+    messId              INT NOT NULL,
+    expenseType         ENUM('meal', 'grocery', 'utilities', 'cleaning', 'gas', 'rent', 'miscellaneous') NOT NULL,
+    amount              DECIMAL(10, 2) NOT NULL,
+    description         TEXT,
+    relatedId           INT,  -- mealId or expenseId depending on type
+    expenseDate         DATE NOT NULL,
+    createdAt           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE,
+    FOREIGN KEY (messId) REFERENCES Mess(messId) ON DELETE CASCADE
+);
+```
+
+**Attributes:**
+- `personalExpenseId` - Primary key, auto-increment
+- `userId` - Which user this expense belongs to
+- `messId` - Which mess
+- `expenseType` - Type of expense (meal/grocery/utilities/cleaning/gas/rent/miscellaneous)
+- `amount` - Amount charged to this user
+- `description` - Details (e.g., "3 meals @ 50 TK" or "Grocery share")
+- `relatedId` - Links to Meals.mealId or Expenses.expenseId
+- `expenseDate` - Date of the expense
+- `createdAt` - When record was created
+
+**Logic:**
+- **Meal expenses:** When user consumes meals, individual charge added (e.g., 3 meals × 50 = 150 TK)
+- **Other expenses:** When anyone adds grocery/utilities/etc, each member gets their share added automatically
+- Total personal expense = SUM of all amounts for that user
+
+---
+
+### 8. MonthlyBills Table
+Stores simplified monthly bill summaries for each user.
 
 ```sql
 CREATE TABLE MonthlyBills (
@@ -287,32 +334,19 @@ CREATE TABLE MonthlyBills (
     month               INT NOT NULL,  -- 1-12
     year                INT NOT NULL,  -- 2024, 2025
     
-    -- Meal calculations
-    totalMeals          INT NOT NULL,
-    mealRate            DECIMAL(10, 2) NOT NULL,
-    mealCost            DECIMAL(10, 2) GENERATED ALWAYS AS (totalMeals * mealRate) STORED,
-    
-    -- Shared expenses (split equally among members)
-    utilitiesShare      DECIMAL(10, 2) DEFAULT 0.00,
-    cleaningShare       DECIMAL(10, 2) DEFAULT 0.00,
-    gasShare            DECIMAL(10, 2) DEFAULT 0.00,
-    rentShare           DECIMAL(10, 2) DEFAULT 0.00,
-    miscShare           DECIMAL(10, 2) DEFAULT 0.00,
+    -- Expense breakdown
+    totalMealExpense    DECIMAL(10, 2) DEFAULT 0.00,
+    totalOtherExpenses  DECIMAL(10, 2) DEFAULT 0.00,  -- Sum of all shared expenses
     
     -- Total bill
-    totalBill           DECIMAL(10, 2) GENERATED ALWAYS AS (
-        (totalMeals * mealRate) + utilitiesShare + cleaningShare + gasShare + rentShare + miscShare
-    ) STORED,
+    totalBill           DECIMAL(10, 2) GENERATED ALWAYS AS (totalMealExpense + totalOtherExpenses) STORED,
     
     -- Payment tracking
     totalPaid           DECIMAL(10, 2) DEFAULT 0.00,
-    dueAmount           DECIMAL(10, 2) GENERATED ALWAYS AS (
-        (totalMeals * mealRate) + utilitiesShare + cleaningShare + gasShare + rentShare + miscShare - totalPaid
-    ) STORED,
+    dueAmount           DECIMAL(10, 2) GENERATED ALWAYS AS (totalMealExpense + totalOtherExpenses - totalPaid) STORED,
     
     -- Status
     status              ENUM('pending', 'partial', 'paid') DEFAULT 'pending',
-    finalizedDate       TIMESTAMP NULL,
     createdAt           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -328,28 +362,21 @@ CREATE TABLE MonthlyBills (
 - `messId` - Which mess
 - `month` - Month number (1-12)
 - `year` - Year
-- `totalMeals` - User's total meals for the month
-- `mealRate` - Final meal rate for that month
-- `mealCost` - Auto-calculated: totalMeals × mealRate
-- `utilitiesShare` - User's share: totalUtilities / numberOfMembers
-- `cleaningShare` - User's share: totalCleaning / numberOfMembers
-- `gasShare` - User's share: totalGas / numberOfMembers
-- `rentShare` - User's share: totalRent / numberOfMembers
-- `miscShare` - User's share: totalMiscellaneous / numberOfMembers
-- `totalBill` - Auto-calculated: mealCost + all shares
+- `totalMealExpense` - Sum of all meal expenses for the month (from PersonalExpenses)
+- `totalOtherExpenses` - Sum of all other expenses (grocery/utilities/cleaning/gas/rent/misc shares)
+- `totalBill` - Auto-calculated: totalMealExpense + totalOtherExpenses
 - `totalPaid` - Sum of all payments made
 - `dueAmount` - Auto-calculated: totalBill - totalPaid
 - `status` - Payment status (pending/partial/paid)
-- `finalizedDate` - When bill was finalized
 - `createdAt` - When record was created
 - `updatedAt` - When record was last modified
 - **UNIQUE constraint:** One bill per user per month per mess
 
-**Note:** Fixed expenses are split equally regardless of when user joined in the month.
+**Note:** This table is updated dynamically as expenses are added throughout the month.
 
 ---
 
-### 8. Payments Table
+### 9. Payments Table
 Stores all payment transactions.
 
 ```sql
@@ -401,16 +428,20 @@ CREATE TABLE Payments (
 ✅ View recent expenses  
 
 #### Meal Tracking
-✅ Set meal preference (breakfast/lunch/dinner counts) - applies from tomorrow  
-✅ Edit meal count for any specific day  
-✅ View personal meal count (daily/weekly/monthly)  
-✅ View current month's estimated bill (based on fixed rate × meals)  
+✅ Set meal preference (breakfast/lunch/dinner counts)
+  - Charged immediately for today (e.g., 3 meals × 50 TK = 150 TK)
+  - Auto-applies from tomorrow onwards
+✅ Edit meal count for any specific day (charges adjusted automatically)
+✅ View personal meal count (daily/weekly/monthly)
+✅ View current month's total meal expense (sum of all meal charges)  
 
 #### Dashboard View
 - Total meals taken this month
-- Estimated amount to pay (meals × fixed rate)
+- Total meal expense (meals × fixed rate)
+- Total shared expenses (grocery/utilities/cleaning/gas/rent/misc shares)
+- Total amount to pay (meal expense + shared expenses)
 - Actual amount paid
-- Due amount
+- Due amount (updated in real-time)
 
 ---
 
@@ -436,22 +467,19 @@ CREATE TABLE Payments (
 - Edit payment records manually  
   - Example: "Faisal paid 500 TK cash" → Admin enters this
 
-#### Month-End Calculations
-✅ View total grocery expense for the month  
-✅ View total meals consumed (all members combined)  
-✅ Calculate actual grocery rate per meal:  
-   `actualGroceryRate = totalGroceryExpense / totalMeals`  
-✅ Calculate final rate per meal:  
-   `finalRate = actualGroceryRate + cookingCharge`  
-✅ Update each member's bill:  
-   `memberBill = (finalRate × memberMeals) + memberShareOfFixedExpenses`  
+#### Monthly Overview
+✅ View total expenses by category (grocery/utilities/cleaning/gas/rent/misc)
+✅ View total meals consumed (all members combined)
+✅ View total meal expenses collected
+✅ View each member's current balance (total expense vs paid)
+✅ Export monthly report  
 
 #### Financial Overview
-- Total expenses (grocery + utilities + cleaning + gas + rent + misc)
-- Total meals consumed
-- Current per-meal rate (fixed during month, final at month-end)
-- Total amount collected from members
-- Total due amount across all members
+- Total mess expenses (grocery + utilities + cleaning + gas + rent + misc)
+- Total meal expenses (all members combined)
+- Current fixed meal rate (set by admin)
+- Total amount collected from members (all payments)
+- Total due amount across all members (updated in real-time)
 
 ---
 
@@ -469,43 +497,61 @@ CREATE TABLE Payments (
 
 ### Workflow 2: Setting Meal Preference
 1. User goes to "Meal Preferences"
-2. Sets: Breakfast: 1, Lunch: 0, Dinner: 1
-3. Preference saved with `effectiveFrom = tomorrow's date`
-4. From tomorrow onwards, system auto-creates meal entries with this preference
-5. User can still manually edit any day
+2. Sets: Breakfast: 1, Lunch: 1, Dinner: 1 (Total: 3 meals)
+3. System immediately:
+   - Charges today: 3 × 50 TK = 150 TK added to personal expense
+   - Saves preference with `effectiveFrom = tomorrow's date`
+4. From tomorrow onwards:
+   - System auto-charges 150 TK daily (if preference unchanged)
+   - User can manually edit any day's meal count (charges adjust automatically)
 
-### Workflow 3: Adding Expense
-1. User buys groceries for 500 TK
-2. Adds expense: Category=Grocery, Amount=500, Date=Today
-3. Expense recorded, shows in recent expenses
-4. Admin can view this in expense management
+### Workflow 3: Adding Expense (Auto-Distribution)
+1. User (any member) buys groceries for 600 TK
+2. Adds expense: Category=Grocery, Amount=600, Date=Today
+3. System automatically:
+   - Adds 600 TK to mess total grocery expense
+   - Gets current member count (e.g., 4 members)
+   - Calculates share: 600 / 4 = 150 TK per member
+   - Adds 150 TK to each member's personal expense
+   - Creates PersonalExpense record for each member
+4. All members see updated total expense in their dashboard immediately
 
 ### Workflow 4: Mid-Month User Join
-1. User joins mess on 15th January
+1. User joins mess on 15th January (4 existing members)
 2. System creates user account with `joinedDate = 15th Jan`
-3. User sets meal preference: Breakfast: 1, Lunch: 1, Dinner: 0
-4. User's meals counted from 15th onwards
-5. At month-end:
-   - User's meal bill = their total meals × final meal rate
-   - User's fixed expense share = (totalUtilities + totalCleaning + totalGas + totalRent + totalMisc) / totalMembers
-   - Total bill = meal bill + fixed expense share
+3. User sets meal preference: Breakfast: 1, Lunch: 1, Dinner: 1
+4. Meal expense charged: 3 × 50 = 150 TK (added to personal expense)
+5. For expenses added BEFORE 15th Jan:
+   - Split among 4 members only (new user not charged)
+6. For expenses added ON/AFTER 15th Jan:
+   - Split among 5 members (including new user)
+   - Example: 500 TK grocery added on 16th Jan → Each gets 500/5 = 100 TK
 
-### Workflow 5: Month-End Settlement (Admin)
-1. Admin views dashboard on last day
-2. System shows:
-   - Total grocery: 15,000 TK
-   - Total meals: 300
-   - Actual grocery rate: 50 TK/meal
-   - Cooking charge: 10 TK/meal
-   - Final rate: 60 TK/meal (was estimated at 50 TK)
-3. Admin sees each member's updated bill
-4. Admin records payments manually
+### Workflow 5: Real-Time Expense Tracking
+1. Throughout the month, expenses are tracked in real-time:
+   - **Day 1:** Faisal sets preference (3 meals/day) → 150 TK charged
+   - **Day 2:** Auto-charged 150 TK (preference continues)
+   - **Day 5:** Someone adds 400 TK utilities → Each member gets 100 TK share
+   - **Day 10:** Faisal changes preference to 2 meals/day → 100 TK charged
+2. Faisal's dashboard shows:
+   - Meal expense: 1,200 TK (8 days × 150 + 2 days × 100)
+   - Shared expenses: 300 TK (various splits)
+   - Total: 1,500 TK
+   - Paid: 1,000 TK
+   - Due: 500 TK
 
 ### Workflow 6: Payment Recording
-1. Faisal's bill: 1,800 TK (30 meals × 60 TK)
-2. Faisal pays 1,000 TK cash
-3. Admin enters: User=Faisal, Amount=1000, Date=Today
-4. System shows: Paid=1000, Due=800
+1. Faisal's current bill: 1,500 TK (meal expenses + shared expenses)
+2. Faisal pays 1,000 TK cash to admin
+3. Admin records payment:
+   - User: Faisal
+   - Amount: 1,000 TK
+   - Date: Today
+   - Method: Cash
+4. System updates:
+   - Faisal's totalPaid: 1,000 TK
+   - Faisal's dueAmount: 500 TK
+   - Status: Partial (since due > 0)
 
 ---
 
@@ -532,7 +578,7 @@ CREATE TABLE Payments (
 1. **No payment gateway integration** - Manual cash/bank entry by admin
 2. **Basic authentication** - Email/password with simple hashing (bcrypt)
 3. **Single currency** - TK (Taka) only
-4. **Manual month finalization** - Admin clicks "Finalize Month" button
+4. **Real-time expense tracking** - No complex month-end calculations needed
 5. **Basic UI** - Android Material Design components
 6. **Local database** - Room Database (SQLite wrapper for Android)
 7. **Firebase Backend** - For real-time sync between members (optional)
@@ -540,13 +586,14 @@ CREATE TABLE Payments (
 ### Key Features for Demo:
 ✅ User signup/login  
 ✅ Create/join mess using invitation code  
-✅ Add expenses (all categories)  
-✅ Record daily meals  
-✅ Set meal preferences  
-✅ View personal dashboard  
-✅ Admin: View all members and bills  
+✅ Add expenses (all categories) with auto-distribution  
+✅ Record daily meals with immediate charging  
+✅ Set meal preferences with auto-charging  
+✅ View personal dashboard with real-time expense tracking  
+✅ Admin: Set fixed meal rate (grocery + cooking)  
+✅ Admin: View all members and real-time balances  
 ✅ Admin: Record payments  
-✅ Month-end calculation  
+✅ Real-time expense distribution and tracking  
 
 ### Out of Scope (Keep Simple):
 ❌ Multi-mess support per user  
@@ -561,17 +608,19 @@ CREATE TABLE Payments (
 ## Summary
 
 This plan provides:
-✅ Variable grocery cost with month-end adjustment  
-✅ Fixed cooking charge  
-✅ Meal preference auto-carry functionality  
-✅ Clear expense distribution rules (per meal vs equal split)  
-✅ Mid-month join handling  
-✅ Manual payment tracking  
-✅ Admin control  
-✅ Feasible for university course project  
+✅ Fixed meal rate (no month-end adjustment)
+✅ Immediate meal expense charging (when preference set or meals consumed)
+✅ Automatic expense distribution (all categories split equally among members)
+✅ Real-time personal expense tracking
+✅ Meal preference with auto-charging functionality
+✅ Mid-month join handling with fair expense sharing
+✅ Manual payment tracking
+✅ Admin control over meal rates
+✅ Simplified implementation - feasible for university course project
 
-**Database Tables:** 8 tables with clear relationships  
-**User Roles:** 2 (Member, Admin)  
-**Expense Categories:** 6 (Grocery, Utilities, Cleaning, Gas, Rent, Miscellaneous)  
+**Database Tables:** 9 tables with clear relationships
+**User Roles:** 2 (Member, Admin)
+**Expense Categories:** 6 (Grocery, Utilities, Cleaning, Gas, Rent, Miscellaneous) + Meals
 **Meal Types:** 3 (Breakfast, Lunch, Dinner)
+**Key Feature:** Real-time expense tracking with automatic distribution
 

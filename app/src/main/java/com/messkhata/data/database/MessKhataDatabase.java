@@ -11,7 +11,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
 
     // Database Info
     private static final String DATABASE_NAME = "MessManager.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;  // Updated for new schema
 
     // Table Names
     public static final String TABLE_USERS = "Users";
@@ -135,6 +135,7 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "breakfast INTEGER DEFAULT 1, " +
                     "lunch INTEGER DEFAULT 1, " +
                     "dinner INTEGER DEFAULT 1, " +
+                    "mealRate REAL NOT NULL DEFAULT 50.00, " +
                     "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "updatedAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +
@@ -154,12 +155,11 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "totalGas REAL DEFAULT 0.00, " +
                     "totalRent REAL DEFAULT 0.00, " +
                     "totalMiscellaneous REAL DEFAULT 0.00, " +
-                    "totalMeals INTEGER DEFAULT 0, " +
+                    "totalMealsConsumed INTEGER DEFAULT 0, " +
+                    "totalMealExpenses REAL DEFAULT 0.00, " +
                     "numberOfMembers INTEGER NOT NULL, " +
-                    "cookingCharge REAL NOT NULL, " +
-                    "isFinalized INTEGER DEFAULT 0, " +
-                    "finalizedDate INTEGER, " +
                     "createdAt INTEGER DEFAULT (strftime('%s','now')), " +
+                    "updatedAt INTEGER DEFAULT (strftime('%s','now')), " +
                     "FOREIGN KEY (messId) REFERENCES " + TABLE_MESS + "(messId) ON DELETE CASCADE, " +
                     "UNIQUE(messId, month, year)" +
                     ");";
@@ -173,16 +173,10 @@ public class MessKhataDatabase extends SQLiteOpenHelper {
                     "messId INTEGER NOT NULL, " +
                     "month INTEGER NOT NULL, " +
                     "year INTEGER NOT NULL, " +
-                    "totalMeals INTEGER NOT NULL, " +
-                    "mealRate REAL NOT NULL, " +
-                    "utilitiesShare REAL DEFAULT 0.00, " +
-                    "cleaningShare REAL DEFAULT 0.00, " +
-                    "gasShare REAL DEFAULT 0.00, " +
-                    "rentShare REAL DEFAULT 0.00, " +
-                    "miscShare REAL DEFAULT 0.00, " +
+                    "totalMealExpense REAL DEFAULT 0.00, " +
+                    "totalOtherExpenses REAL DEFAULT 0.00, " +
                     "totalPaid REAL DEFAULT 0.00, " +
                     "status TEXT DEFAULT 'pending', " +
-                    "finalizedDate INTEGER, " +
                     "createdAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "updatedAt INTEGER DEFAULT (strftime('%s', 'now')), " +
                     "FOREIGN KEY (userId) REFERENCES " + TABLE_USERS + "(userId) ON DELETE CASCADE, " +

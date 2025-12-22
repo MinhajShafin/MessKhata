@@ -462,16 +462,6 @@
                 tools:listitem="@layout/item_member_balance"
                 tools:itemCount="5" />
 
-            <!-- Finalize Report Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFinalizeReport"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:text="@string/finalize_report"
-                android:textSize="16sp"
-                app:cornerRadius="8dp" />
-
             <!-- Loading State -->
             <ProgressBar
                 android:id="@+id/progressBar"

@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.messkhata.R;
+import com.messkhata.data.dao.ExpenseDao;
 import com.messkhata.data.dao.MealDao;
 import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.dao.ReportDao;
@@ -49,6 +50,7 @@ public class DashboardFragment extends Fragment {
     private UserDao userDao;
     private MessDao messDao;
     private MealDao mealDao;
+    private ExpenseDao expenseDao;
     private ReportDao reportDao;
 
     // Session data
@@ -91,6 +93,7 @@ public class DashboardFragment extends Fragment {
         userDao = new UserDao(requireContext());
         messDao = new MessDao(requireContext());
         mealDao = new MealDao(requireContext());
+        expenseDao = new ExpenseDao(requireContext());
         reportDao = new ReportDao(requireContext());
     }
 
@@ -142,20 +145,31 @@ public class DashboardFragment extends Fragment {
                 // Get user's total meals this month
                 int totalMeals = mealDao.getTotalMealsForMonth((int) userId, currentMonth, currentYear);
                 
-                // Get total expenses this month
-                double totalExpenses = reportDao.getTotalExpenses(messId, currentMonth, currentYear);
+                // Get user's total meal expense (using actual mealRate from Meals table)
+                double totalMealExpense = mealDao.getTotalMealExpense((int) userId, currentMonth, currentYear);
+                
+                // Get total mess expenses for the month
+                double totalMessExpenses = expenseDao.getTotalExpenses(messId, currentMonth, currentYear);
+                
+                // Get active member count for expense distribution
+                int activeMemberCount = userDao.getActiveMemberCount(messId, currentMonth, currentYear);
+                
+                // Calculate user's share of expenses
+                double sharedExpense = (activeMemberCount > 0) ? (totalMessExpenses / activeMemberCount) : 0.0;
+                
+                // Calculate total expense (meal + shared)
+                double totalExpense = totalMealExpense + sharedExpense;
                 
                 // Get member count
                 List<User> members = userDao.getMembersByMessId(messId);
                 int memberCount = members.size();
                 
-                // Calculate estimated bill
+                // Get current meal rate
                 double mealRate = mess != null ? mess.getFixedMealRate() : 50.0;
-                double estimatedBill = totalMeals * mealRate;
 
                 // Update UI on main thread
                 requireActivity().runOnUiThread(() -> {
-                    updateUI(user, mess, totalMeals, estimatedBill, totalExpenses, 
+                    updateUI(user, mess, totalMeals, totalMealExpense, totalExpense, 
                             memberCount, mealRate);
                     swipeRefresh.setRefreshing(false);
                 });
@@ -172,8 +186,8 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    private void updateUI(User user, Mess mess, int totalMeals, double estimatedBill,
-                         double totalExpenses, int memberCount, double mealRate) {
+    private void updateUI(User user, Mess mess, int totalMeals, double totalMealExpense,
+                         double totalExpense, int memberCount, double mealRate) {
         // Set greeting based on time of day
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -202,7 +216,8 @@ public class DashboardFragment extends Fragment {
         tvMemberCount.setText(String.valueOf(memberCount));
         tvCurrentMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
         tvTotalMeals.setText(String.valueOf(totalMeals));
-        tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpenses));
+        // Show total expense (meal expense + shared expense)
+        tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpense));
     }
 
     @Override

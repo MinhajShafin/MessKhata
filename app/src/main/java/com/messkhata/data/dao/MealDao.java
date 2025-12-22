@@ -28,7 +28,7 @@ public class MealDao {
      * @return true if successful
      */
     public boolean addOrUpdateMeal(int userId, int messId, long date, 
-                                   int breakfast, int lunch, int dinner) {
+                                   int breakfast, int lunch, int dinner, double mealRate) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         try {
@@ -39,6 +39,7 @@ public class MealDao {
             values.put("breakfast", breakfast);
             values.put("lunch", lunch);
             values.put("dinner", dinner);
+            values.put("mealRate", mealRate);
             values.put("updatedAt", System.currentTimeMillis() / 1000);
 
             // Try to insert, if conflict (unique constraint) then update
@@ -79,7 +80,8 @@ public class MealDao {
                 cursor.getLong(cursor.getColumnIndexOrThrow("mealDate")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("breakfast")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("lunch")),
-                cursor.getInt(cursor.getColumnIndexOrThrow("dinner"))
+                cursor.getInt(cursor.getColumnIndexOrThrow("dinner")),
+                cursor.getDouble(cursor.getColumnIndexOrThrow("mealRate"))
             );
         }
         cursor.close();
@@ -120,7 +122,8 @@ public class MealDao {
                 cursor.getLong(cursor.getColumnIndexOrThrow("mealDate")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("breakfast")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("lunch")),
-                cursor.getInt(cursor.getColumnIndexOrThrow("dinner"))
+                cursor.getInt(cursor.getColumnIndexOrThrow("dinner")),
+                cursor.getDouble(cursor.getColumnIndexOrThrow("mealRate"))
             );
             meals.add(meal);
         }
@@ -264,5 +267,64 @@ public class MealDao {
                 "userId = ? AND mealDate = ?",
                 new String[]{String.valueOf(userId), String.valueOf(date)});
         return rows > 0;
+    }
+
+    /**
+     * Get total meal expense for a user in a specific month
+     * @return Total meal expense amount
+     */
+    public double getTotalMealExpense(int userId, int month, int year) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Calculate start and end timestamps for the month
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, month - 1, 1, 0, 0, 0);
+        long startDate = calendar.getTimeInMillis() / 1000;
+
+        calendar.add(Calendar.MONTH, 1);
+        long endDate = calendar.getTimeInMillis() / 1000;
+
+        String query = "SELECT SUM((breakfast + lunch + dinner) * mealRate) as totalExpense FROM " +
+                MessKhataDatabase.TABLE_MEALS +
+                " WHERE userId = ? AND mealDate >= ? AND mealDate < ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+                String.valueOf(userId),
+                String.valueOf(startDate),
+                String.valueOf(endDate)
+        });
+
+        double totalExpense = 0.0;
+        if (cursor.moveToFirst()) {
+            totalExpense = cursor.getDouble(cursor.getColumnIndexOrThrow("totalExpense"));
+        }
+        cursor.close();
+        return totalExpense;
+    }
+
+    /**
+     * Get all active meal preferences for a specific mess
+     * Returns the most recent preference for each user
+     * Used by MealAutoChargeService for automatic daily charging
+     * 
+     * @param messId The mess ID
+     * @return Cursor containing userId, breakfast, lunch, dinner for each user with preferences
+     */
+    public Cursor getActivePreferences(int messId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Get the most recent preference for each user in this mess
+        // Using a subquery to get only the latest preference per user
+        String query = "SELECT mp.userId, mp.breakfast, mp.lunch, mp.dinner " +
+                "FROM " + MessKhataDatabase.TABLE_MEAL_PREFERENCES + " mp " +
+                "INNER JOIN ( " +
+                "    SELECT userId, MAX(createdAt) as maxCreated " +
+                "    FROM " + MessKhataDatabase.TABLE_MEAL_PREFERENCES + " " +
+                "    WHERE messId = ? " +
+                "    GROUP BY userId " +
+                ") latest ON mp.userId = latest.userId AND mp.createdAt = latest.maxCreated " +
+                "WHERE mp.messId = ?";
+
+        return db.rawQuery(query, new String[]{String.valueOf(messId), String.valueOf(messId)});
     }
 }

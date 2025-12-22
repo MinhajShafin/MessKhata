@@ -107,6 +107,16 @@
                     android:text="@string/total_meals"
                     android:textSize="12sp"
                     android:textColor="@color/text_secondary" />
+                    
+                <TextView
+                    android:id="@+id/tvMealExpenseToday"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/expense_color"
+                    tools:text="৳ 150.00" />
 
             </LinearLayout>
 

@@ -247,4 +247,38 @@ public class ExpenseDao {
         cursor.close();
         return expense;
     }
+
+    /**
+     * Get total expenses for a mess in a specific month
+     * Used for calculating shared expenses among members
+     * @return Total expense amount
+     */
+    public double getTotalExpenses(int messId, int month, int year) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Calculate start and end timestamps for the month
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, month - 1, 1, 0, 0, 0);
+        long startDate = calendar.getTimeInMillis() / 1000;
+
+        calendar.add(Calendar.MONTH, 1);
+        long endDate = calendar.getTimeInMillis() / 1000;
+
+        String query = "SELECT SUM(amount) as total FROM " + 
+                MessKhataDatabase.TABLE_EXPENSES +
+                " WHERE messId = ? AND expenseDate >= ? AND expenseDate < ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(startDate),
+            String.valueOf(endDate)
+        });
+
+        double total = 0.0;
+        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            total = cursor.getDouble(0);
+        }
+        cursor.close();
+        return total;
+    }
 }

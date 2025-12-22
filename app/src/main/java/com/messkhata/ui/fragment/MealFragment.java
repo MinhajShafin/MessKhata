@@ -15,8 +15,10 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.messkhata.R;
 import com.messkhata.data.dao.MealDao;
+import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Meal;
+import com.messkhata.data.model.Mess;
 import com.messkhata.utils.PreferenceManager;
 
 import java.text.SimpleDateFormat;
@@ -34,6 +36,7 @@ public class MealFragment extends Fragment {
     
     // UI Components - Summary
     private TextView tvTotalMealsToday;
+    private TextView tvMealExpenseToday;
     private TextView tvBreakfastSummary;
     private TextView tvLunchSummary;
     private TextView tvDinnerSummary;
@@ -52,6 +55,7 @@ public class MealFragment extends Fragment {
 
     // DAOs
     private MealDao mealDao;
+    private MessDao messDao;
     
     // Session data
     private PreferenceManager prefManager;
@@ -92,6 +96,7 @@ public class MealFragment extends Fragment {
         
         // Summary (using different IDs to avoid conflict)
         tvTotalMealsToday = view.findViewById(R.id.tvTotalMealsToday);
+        tvMealExpenseToday = view.findViewById(R.id.tvMealExpenseToday);
         tvBreakfastSummary = view.findViewById(R.id.tvBreakfastSummary);
         tvLunchSummary = view.findViewById(R.id.tvLunchSummary);
         tvDinnerSummary = view.findViewById(R.id.tvDinnerSummary);
@@ -114,6 +119,7 @@ public class MealFragment extends Fragment {
 
     private void initializeDAO() {
         mealDao = new MealDao(requireContext());
+        messDao = new MessDao(requireContext());
     }
 
     private void loadSessionData() {
@@ -176,6 +182,24 @@ public class MealFragment extends Fragment {
         int total = breakfastCount + lunchCount + dinnerCount;
         tvTotalMealsToday.setText(String.valueOf(total));
         
+        // Calculate and display meal expense
+        MessKhataDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                Mess mess = messDao.getMessByIdAsObject(messId);
+                if (mess != null) {
+                    double mealRate = mess.getGroceryBudgetPerMeal() + mess.getCookingChargePerMeal();
+                    double mealExpense = total * mealRate;
+                    
+                    requireActivity().runOnUiThread(() -> {
+                        tvMealExpenseToday.setText(String.format(java.util.Locale.getDefault(), 
+                            "৳ %.2f", mealExpense));
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        
         // Save meal for today automatically
         saveTodayMeal();
     }
@@ -183,14 +207,26 @@ public class MealFragment extends Fragment {
     private void saveTodayMeal() {
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
+                // Get mess rate from Mess table
+                Mess mess = messDao.getMessByIdAsObject(messId);
+                if (mess == null) {
+                    requireActivity().runOnUiThread(() ->
+                        Toast.makeText(requireContext(), "Error: Mess not found", Toast.LENGTH_SHORT).show()
+                    );
+                    return;
+                }
+                
+                double mealRate = mess.getGroceryBudgetPerMeal() + mess.getCookingChargePerMeal();
                 long todayTimestamp = getTodayTimestamp();
+                
                 boolean success = mealDao.addOrUpdateMeal(
                     (int) userId,
                     messId,
                     todayTimestamp,
                     breakfastCount,
                     lunchCount,
-                    dinnerCount
+                    dinnerCount,
+                    mealRate
                 );
                 
                 if (!success) {

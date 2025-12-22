@@ -9,6 +9,7 @@ import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.User;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -299,5 +300,69 @@ public class UserDao {
     public boolean isUserAdmin(long userId) {
         String role = getUserRole(userId);
         return "admin".equalsIgnoreCase(role);
+    }
+
+    /**
+     * Get active members on a specific date
+     * A member is considered active if they have any meal entries on that date
+     * @param messId The mess ID
+     * @param date The date timestamp (in seconds)
+     * @return List of User IDs who had meals on that date
+     */
+    public List<Integer> getActiveMembersByDate(int messId, long date) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Integer> activeMembers = new ArrayList<>();
+
+        String query = "SELECT DISTINCT userId FROM " + MessKhataDatabase.TABLE_MEALS +
+                " WHERE messId = ? AND mealDate = ? AND (breakfast > 0 OR lunch > 0 OR dinner > 0)";
+        
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(date)
+        });
+
+        while (cursor.moveToNext()) {
+            activeMembers.add(cursor.getInt(0));
+        }
+        cursor.close();
+        return activeMembers;
+    }
+
+    /**
+     * Get count of active members for a specific month
+     * A member is considered active if they had any meals during that month
+     * @param messId The mess ID
+     * @param month The month (1-12)
+     * @param year The year
+     * @return Count of distinct active members
+     */
+    public int getActiveMemberCount(int messId, int month, int year) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Calculate start and end timestamps for the month
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, month - 1, 1, 0, 0, 0);
+        long startDate = calendar.getTimeInMillis() / 1000;
+
+        calendar.add(Calendar.MONTH, 1);
+        long endDate = calendar.getTimeInMillis() / 1000;
+
+        String query = "SELECT COUNT(DISTINCT userId) as count FROM " + 
+                MessKhataDatabase.TABLE_MEALS +
+                " WHERE messId = ? AND mealDate >= ? AND mealDate < ? " +
+                "AND (breakfast > 0 OR lunch > 0 OR dinner > 0)";
+        
+        Cursor cursor = db.rawQuery(query, new String[]{
+            String.valueOf(messId),
+            String.valueOf(startDate),
+            String.valueOf(endDate)
+        });
+
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
     }
 }

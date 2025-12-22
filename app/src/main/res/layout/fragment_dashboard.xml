@@ -257,7 +257,7 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Total Expenses Card -->
+                <!-- Total Expenses Card (Meal Expense + Shared Expense) -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
