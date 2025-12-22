@@ -25,6 +25,7 @@ public class UserDao {
 
     /**
      * Register a new user
+     * 
      * @return true if successful, false if email/phone already exists
      */
     public boolean registerUser(String name, String email, String phone, String password) {
@@ -63,11 +64,22 @@ public class UserDao {
 
         String query = "SELECT 1 FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE email = ? LIMIT 1";
-        Cursor cursor = db.rawQuery(query, new String[]{email});
+        Cursor cursor = db.rawQuery(query, new String[] { email });
 
         boolean exists = cursor.getCount() > 0;
         cursor.close();
         return exists;
+    }
+
+    /**
+     * Get user by email (returns Cursor for sync operations)
+     */
+    public Cursor getUserByEmail(String email) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE email = ? AND isActive = 1 LIMIT 1";
+        return db.rawQuery(query, new String[] { email });
     }
 
     /**
@@ -78,7 +90,7 @@ public class UserDao {
 
         String query = "SELECT 1 FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE phoneNumber = ? LIMIT 1";
-        Cursor cursor = db.rawQuery(query, new String[]{phone});
+        Cursor cursor = db.rawQuery(query, new String[] { phone });
 
         boolean exists = cursor.getCount() > 0;
         cursor.close();
@@ -87,6 +99,7 @@ public class UserDao {
 
     /**
      * Login user - verify credentials
+     * 
      * @return userId if successful, -1 if failed
      */
     public long loginUser(String email, String password) {
@@ -94,7 +107,7 @@ public class UserDao {
 
         String query = "SELECT userId FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE email = ? AND password = ? AND isActive = 1";
-        Cursor cursor = db.rawQuery(query, new String[]{email, password});
+        Cursor cursor = db.rawQuery(query, new String[] { email, password });
 
         long userId = -1;
         if (cursor.moveToFirst()) {
@@ -112,7 +125,7 @@ public class UserDao {
 
         String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE userId = ?";
-        return db.rawQuery(query, new String[]{String.valueOf(userId)});
+        return db.rawQuery(query, new String[] { String.valueOf(userId) });
     }
 
     /**
@@ -128,7 +141,7 @@ public class UserDao {
         int rows = db.update(MessKhataDatabase.TABLE_USERS,
                 values,
                 "userId = ?",
-                new String[]{String.valueOf(userId)});
+                new String[] { String.valueOf(userId) });
         return rows > 0;
     }
 
@@ -144,12 +157,13 @@ public class UserDao {
         int rows = db.update(MessKhataDatabase.TABLE_USERS,
                 values,
                 "userId = ?",
-                new String[]{String.valueOf(userId)});
+                new String[] { String.valueOf(userId) });
         return rows > 0;
     }
 
     /**
      * Get user's mess ID
+     * 
      * @return messId if user has mess, -1 if no mess
      */
     public int getUserMessId(long userId) {
@@ -157,7 +171,7 @@ public class UserDao {
 
         String query = "SELECT messId FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE userId = ?";
-        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
+        Cursor cursor = db.rawQuery(query, new String[] { String.valueOf(userId) });
 
         int messId = -1;
         if (cursor.moveToFirst()) {
@@ -181,11 +195,12 @@ public class UserDao {
                 "LEFT JOIN " + MessKhataDatabase.TABLE_MESS + " m " +
                 "ON u.messId = m.messId " +
                 "WHERE u.userId = ?";
-        return db.rawQuery(query, new String[]{String.valueOf(userId)});
+        return db.rawQuery(query, new String[] { String.valueOf(userId) });
     }
 
     /**
      * Get user by ID as User object
+     * 
      * @return User object or null if not found
      */
     public User getUserByIdAsObject(long userId) {
@@ -193,20 +208,19 @@ public class UserDao {
 
         String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE userId = ?";
-        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
+        Cursor cursor = db.rawQuery(query, new String[] { String.valueOf(userId) });
 
         User user = null;
         if (cursor.moveToFirst()) {
             user = new User(
-                cursor.getLong(cursor.getColumnIndexOrThrow("userId")),
-                cursor.getString(cursor.getColumnIndexOrThrow("fullName")),
-                cursor.getString(cursor.getColumnIndexOrThrow("email")),
-                cursor.getString(cursor.getColumnIndexOrThrow("phoneNumber")),
-                cursor.isNull(cursor.getColumnIndexOrThrow("messId")) ? -1 : 
-                    cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
-                cursor.getString(cursor.getColumnIndexOrThrow("role")),
-                cursor.getLong(cursor.getColumnIndexOrThrow("joinedDate"))
-            );
+                    cursor.getLong(cursor.getColumnIndexOrThrow("userId")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("fullName")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("email")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("phoneNumber")),
+                    cursor.isNull(cursor.getColumnIndexOrThrow("messId")) ? -1
+                            : cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("role")),
+                    cursor.getLong(cursor.getColumnIndexOrThrow("joinedDate")));
         }
         cursor.close();
         return user;
@@ -214,6 +228,7 @@ public class UserDao {
 
     /**
      * Get all members of a mess
+     * 
      * @return List of User objects
      */
     public List<User> getMembersByMessId(int messId) {
@@ -222,18 +237,17 @@ public class UserDao {
 
         String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE messId = ? AND isActive = 1 ORDER BY role DESC, fullName ASC";
-        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(messId)});
+        Cursor cursor = db.rawQuery(query, new String[] { String.valueOf(messId) });
 
         while (cursor.moveToNext()) {
             User user = new User(
-                cursor.getLong(cursor.getColumnIndexOrThrow("userId")),
-                cursor.getString(cursor.getColumnIndexOrThrow("fullName")),
-                cursor.getString(cursor.getColumnIndexOrThrow("email")),
-                cursor.getString(cursor.getColumnIndexOrThrow("phoneNumber")),
-                cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
-                cursor.getString(cursor.getColumnIndexOrThrow("role")),
-                cursor.getLong(cursor.getColumnIndexOrThrow("joinedDate"))
-            );
+                    cursor.getLong(cursor.getColumnIndexOrThrow("userId")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("fullName")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("email")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("phoneNumber")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("role")),
+                    cursor.getLong(cursor.getColumnIndexOrThrow("joinedDate")));
             members.add(user);
         }
         cursor.close();
@@ -241,7 +255,21 @@ public class UserDao {
     }
 
     /**
+     * Get all users in a mess as Cursor (for sync operations)
+     * 
+     * @return Cursor with user data
+     */
+    public Cursor getUsersByMessId(int messId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT * FROM " + MessKhataDatabase.TABLE_USERS +
+                " WHERE messId = ? AND isActive = 1";
+        return db.rawQuery(query, new String[] { String.valueOf(messId) });
+    }
+
+    /**
      * Update user's mess ID
+     * 
      * @return true if successful
      */
     public boolean updateUserMessId(long userId, int messId) {
@@ -253,12 +281,13 @@ public class UserDao {
         int rows = db.update(MessKhataDatabase.TABLE_USERS,
                 values,
                 "userId = ?",
-                new String[]{String.valueOf(userId)});
+                new String[] { String.valueOf(userId) });
         return rows > 0;
     }
 
     /**
      * Update user's role (admin only)
+     * 
      * @return true if successful
      */
     public boolean updateUserRole(long userId, String role) {
@@ -270,12 +299,13 @@ public class UserDao {
         int rows = db.update(MessKhataDatabase.TABLE_USERS,
                 values,
                 "userId = ?",
-                new String[]{String.valueOf(userId)});
+                new String[] { String.valueOf(userId) });
         return rows > 0;
     }
 
     /**
      * Get user's role
+     * 
      * @return Role string ("admin" or "member") or null if user not found
      */
     public String getUserRole(long userId) {
@@ -283,7 +313,7 @@ public class UserDao {
 
         String query = "SELECT role FROM " + MessKhataDatabase.TABLE_USERS +
                 " WHERE userId = ?";
-        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
+        Cursor cursor = db.rawQuery(query, new String[] { String.valueOf(userId) });
 
         String role = null;
         if (cursor.moveToFirst()) {
@@ -295,6 +325,7 @@ public class UserDao {
 
     /**
      * Check if user is admin
+     * 
      * @return true if user is admin
      */
     public boolean isUserAdmin(long userId) {
