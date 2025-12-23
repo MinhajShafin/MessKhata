@@ -227,6 +227,20 @@ public class RealtimeSyncManager {
             try {
                 SyncableMess mess = SyncableMess.fromFirebaseMap(snapshot.getId(), snapshot.getData());
 
+                // Get current local mess data to compare timestamps
+                Mess localMess = messDao.getMessByIdAsObject(currentLocalMessId);
+                
+                // Only update if Firebase data is newer or local data doesn't exist
+                if (localMess != null && mess.getLastModified() > 0) {
+                    // Skip update if local data was modified very recently (within last 5 seconds)
+                    // This prevents overwriting local changes that are still being synced
+                    long timeSinceLastUpdate = System.currentTimeMillis() - mess.getLastModified();
+                    if (timeSinceLastUpdate < 5000) {
+                        Log.d(TAG, "Skipping mess update - data is from recent local change (age: " + timeSinceLastUpdate + "ms)");
+                        return;
+                    }
+                }
+
                 // Update local mess with new meal rates
                 messDao.updateMessRates(
                         currentLocalMessId,
