@@ -27,6 +27,7 @@ import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Meal;
 import com.messkhata.data.model.Mess;
 import com.messkhata.data.sync.RealtimeSyncManager;
+import com.messkhata.data.sync.SyncManager;
 import com.messkhata.utils.PreferenceManager;
 
 import java.text.SimpleDateFormat;
@@ -174,7 +175,7 @@ public class MealFragment extends Fragment {
         userRole = prefManager.getUserRole();
         currentDate = Calendar.getInstance();
         updateDateDisplay();
-        
+
         // Show admin section if user is admin (case-insensitive check)
         if (userRole != null && userRole.equalsIgnoreCase("admin")) {
             cardAdminMealRate.setVisibility(View.VISIBLE);
@@ -441,6 +442,9 @@ public class MealFragment extends Fragment {
                                     "Meal rate updated successfully! New rate: ৳" + total,
                                     Toast.LENGTH_LONG).show();
 
+                            // Sync meal rate to cloud for other members
+                            SyncManager.getInstance(requireContext()).syncMessImmediate(messId);
+
                             // Refresh meal expense display
                             updateTotalAndSave();
                         } else {
@@ -469,6 +473,7 @@ public class MealFragment extends Fragment {
         IntentFilter filter = new IntentFilter();
         filter.addAction(RealtimeSyncManager.ACTION_DATA_UPDATED);
         filter.addAction(RealtimeSyncManager.ACTION_MEALS_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_MESS_UPDATED);
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(syncReceiver, filter);
 
         loadTodayMeals();

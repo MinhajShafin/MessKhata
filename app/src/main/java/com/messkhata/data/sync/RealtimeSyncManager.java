@@ -17,6 +17,7 @@ import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.sync.model.SyncableExpense;
 import com.messkhata.data.sync.model.SyncableMeal;
+import com.messkhata.data.sync.model.SyncableMess;
 import com.messkhata.data.sync.model.SyncableUser;
 
 import java.util.concurrent.ExecutorService;
@@ -33,6 +34,7 @@ public class RealtimeSyncManager {
     public static final String ACTION_USERS_UPDATED = "com.messkhata.USERS_UPDATED";
     public static final String ACTION_EXPENSES_UPDATED = "com.messkhata.EXPENSES_UPDATED";
     public static final String ACTION_MEALS_UPDATED = "com.messkhata.MEALS_UPDATED";
+    public static final String ACTION_MESS_UPDATED = "com.messkhata.MESS_UPDATED";
     public static final String ACTION_DATA_UPDATED = "com.messkhata.DATA_UPDATED";
 
     private static RealtimeSyncManager instance;
@@ -49,6 +51,7 @@ public class RealtimeSyncManager {
     private ListenerRegistration usersListener;
     private ListenerRegistration expensesListener;
     private ListenerRegistration mealsListener;
+    private ListenerRegistration messListener;
 
     private String currentFirebaseMessId;
     private int currentLocalMessId;
@@ -97,6 +100,9 @@ public class RealtimeSyncManager {
 
         Log.d(TAG, "Starting real-time listeners for firebaseMessId: " + firebaseMessId);
 
+        // Start listening for mess (meal rate changes)
+        startMessListener(firebaseMessId);
+
         // Start listening for users
         startUsersListener(firebaseMessId);
 
@@ -128,8 +134,32 @@ public class RealtimeSyncManager {
             mealsListener = null;
         }
 
+        if (messListener != null) {
+            messListener.remove();
+            messListener = null;
+        }
+
         isListening = false;
         currentFirebaseMessId = null;
+    }
+
+    /**
+     * Start listening for mess changes (meal rate updates)
+     */
+    private void startMessListener(String firebaseMessId) {
+        messListener = firestore.collection(SyncableMess.COLLECTION_NAME)
+                .document(firebaseMessId)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Mess listener error", error);
+                        return;
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        Log.d(TAG, "Mess changed: " + snapshot.getId());
+                        processMessSnapshot(snapshot);
+                    }
+                });
     }
 
     /**
@@ -187,6 +217,32 @@ public class RealtimeSyncManager {
                         processMealsSnapshot(snapshots);
                     }
                 });
+    }
+
+    /**
+     * Process mess snapshot and update local database (meal rates)
+     */
+    private void processMessSnapshot(DocumentSnapshot snapshot) {
+        executor.execute(() -> {
+            try {
+                SyncableMess mess = SyncableMess.fromFirebaseMap(snapshot.getId(), snapshot.getData());
+
+                // Update local mess with new meal rates
+                messDao.updateMessRates(
+                        currentLocalMessId,
+                        mess.getGroceryBudgetPerMeal(),
+                        mess.getCookingChargePerMeal());
+
+                Log.d(TAG, "Updated mess rates: grocery=" + mess.getGroceryBudgetPerMeal()
+                        + ", cooking=" + mess.getCookingChargePerMeal());
+
+                // Broadcast update
+                broadcastUpdate(ACTION_MESS_UPDATED);
+                broadcastUpdate(ACTION_DATA_UPDATED);
+            } catch (Exception e) {
+                Log.e(TAG, "Error processing mess snapshot", e);
+            }
+        });
     }
 
     /**

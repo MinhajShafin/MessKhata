@@ -246,6 +246,7 @@ public class DashboardFragment extends Fragment {
         filter.addAction(RealtimeSyncManager.ACTION_USERS_UPDATED);
         filter.addAction(RealtimeSyncManager.ACTION_EXPENSES_UPDATED);
         filter.addAction(RealtimeSyncManager.ACTION_MEALS_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_MESS_UPDATED);
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(syncReceiver, filter);
 
         // Refresh data when fragment becomes visible
