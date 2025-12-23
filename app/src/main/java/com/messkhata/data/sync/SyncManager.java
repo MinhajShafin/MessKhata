@@ -723,6 +723,54 @@ public class SyncManager {
     }
 
     /**
+     * Sync mess data immediately (used when meal rate is updated)
+     */
+    public void syncMessImmediate(int messId) {
+        if (!isSyncEnabled() || !isAuthenticated()) {
+            return;
+        }
+
+        // If offline, queue the operation
+        if (!isNetworkAvailable()) {
+            Log.d(TAG, "Offline - queuing mess sync for later");
+            // Get mess data for queuing
+            Cursor cursor = messDao.getMessById(messId);
+            if (cursor != null && cursor.moveToFirst()) {
+                Mess mess = new Mess(
+                        cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("messName")),
+                        cursor.getDouble(cursor.getColumnIndexOrThrow("groceryBudgetPerMeal")),
+                        cursor.getDouble(cursor.getColumnIndexOrThrow("cookingChargePerMeal")),
+                        cursor.getLong(cursor.getColumnIndexOrThrow("createdDate")));
+                cursor.close();
+
+                String firebaseMessId = messDao.getFirebaseMessId(messId);
+                SyncableMess syncableMess = new SyncableMess(mess);
+                syncableMess.setFirebaseId(firebaseMessId);
+                syncableMess.setLastModified(System.currentTimeMillis());
+
+                OfflineQueueManager.getInstance(context).queueOperation(
+                        OfflineQueueManager.OP_UPDATE,
+                        OfflineQueueManager.ENTITY_MESS,
+                        String.valueOf(messId),
+                        firebaseMessId,
+                        firebaseMessId,
+                        syncableMess);
+            }
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                syncMessToCloud(messId);
+                Log.d(TAG, "Mess synced immediately: " + messId);
+            } catch (Exception e) {
+                Log.e(TAG, "Error syncing mess immediately", e);
+            }
+        });
+    }
+
+    /**
      * Helper method to notify progress
      */
     private void notifyProgress(int progress, String message) {

@@ -13,6 +13,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.messkhata.data.sync.model.SyncableExpense;
 import com.messkhata.data.sync.model.SyncableMeal;
+import com.messkhata.data.sync.model.SyncableMess;
 import com.messkhata.data.sync.model.SyncableUser;
 
 import java.util.ArrayList;
@@ -389,6 +390,9 @@ public class OfflineQueueManager extends SQLiteOpenHelper {
                 case ENTITY_USER:
                     return processUserOperation(item, firebaseRepo);
 
+                case ENTITY_MESS:
+                    return processMessOperation(item, firebaseRepo);
+
                 default:
                     Log.w(TAG, "Unknown entity type: " + item.entityType);
                     return false;
@@ -447,6 +451,20 @@ public class OfflineQueueManager extends SQLiteOpenHelper {
             case OP_CREATE:
             case OP_UPDATE:
                 firebaseRepo.saveUser(user);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private boolean processMessOperation(QueueItem item, FirebaseRepository firebaseRepo) {
+        SyncableMess mess = gson.fromJson(item.dataJson, SyncableMess.class);
+
+        switch (item.operationType) {
+            case OP_CREATE:
+            case OP_UPDATE:
+                firebaseRepo.saveMess(mess);
                 return true;
 
             default:
