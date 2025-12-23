@@ -334,6 +334,15 @@ public class RealtimeSyncManager {
                 for (DocumentSnapshot doc : snapshots.getDocuments()) {
                     SyncableMeal meal = SyncableMeal.fromFirebaseMap(doc.getId(), doc.getData());
 
+                    // Skip very recent updates to prevent overwriting local changes being synced
+                    if (meal.getLastModified() > 0) {
+                        long timeSinceLastUpdate = System.currentTimeMillis() - meal.getLastModified();
+                        if (timeSinceLastUpdate < 3000) { // 3 seconds
+                            Log.d(TAG, "Skipping meal update - data is from recent local change (age: " + timeSinceLastUpdate + "ms)");
+                            continue;
+                        }
+                    }
+
                     // Resolve userEmail to local userId
                     int localUserId = meal.getUserId();
                     String userEmail = meal.getUserEmail();
@@ -342,6 +351,18 @@ public class RealtimeSyncManager {
                         if (userCursor != null && userCursor.moveToFirst()) {
                             localUserId = userCursor.getInt(userCursor.getColumnIndexOrThrow("userId"));
                             userCursor.close();
+                        }
+                    }
+
+                    // Check if we have a local version that was updated very recently
+                    com.messkhata.data.model.Meal localMeal = mealDao.getMealByDate(localUserId, meal.getMealDate());
+                    if (localMeal != null) {
+                        // Skip if local meal exists and Firebase data is not significantly different
+                        // This prevents race conditions during sync
+                        long currentTime = System.currentTimeMillis();
+                        if (meal.getLastModified() > 0 && currentTime - meal.getLastModified() < 5000) {
+                            Log.d(TAG, "Skipping meal update for userId=" + localUserId + " - potential race condition");
+                            continue;
                         }
                     }
 

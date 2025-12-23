@@ -89,9 +89,16 @@ public class MealFragment extends Fragment {
     private BroadcastReceiver syncReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // Data updated from cloud - refresh UI
+            // Data updated from cloud - refresh UI after a small delay
+            // to allow local changes to sync to Firebase first
             if (isAdded() && getActivity() != null) {
-                loadTodayMeals();
+                // Only reload if this is truly a remote change
+                // Skip immediate reloads that might be from local sync operations
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (isAdded() && getActivity() != null) {
+                        loadTodayMeals();
+                    }
+                }, 300); // 300ms delay to allow sync to complete
             }
         }
     };
