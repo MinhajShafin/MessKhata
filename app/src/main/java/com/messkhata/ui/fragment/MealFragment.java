@@ -443,6 +443,15 @@ public class MealFragment extends Fragment {
             MessKhataDatabase.databaseWriteExecutor.execute(() -> {
                 try {
                     android.util.Log.d("MealFragment", "Calling updateMessRates with messId: " + messId);
+                    
+                    // Temporarily stop realtime listeners to prevent overwrite during update
+                    RealtimeSyncManager realtimeSync = RealtimeSyncManager.getInstance(requireContext());
+                    boolean wasListening = realtimeSync.isListening();
+                    if (wasListening) {
+                        realtimeSync.stopListening();
+                        android.util.Log.d("MealFragment", "Temporarily stopped realtime sync");
+                    }
+                    
                     boolean success = messDao.updateMessRates(messId, grocery, cooking);
                     android.util.Log.d("MealFragment", "Update result: " + success);
 
@@ -452,6 +461,17 @@ public class MealFragment extends Fragment {
                         int updatedCount = mealDao.updateMealRateForTodayAndFuture(messId, newRate);
                         android.util.Log.d("MealFragment", "Updated " + updatedCount + " meals to new rate: " + newRate);
 
+                        // Sync mess rate to cloud first
+                        try {
+                            SyncManager.getInstance(requireContext()).syncMessImmediate(messId);
+                            android.util.Log.d("MealFragment", "Synced mess rates to Firebase");
+                            
+                            // Give it a moment to complete
+                            Thread.sleep(500);
+                        } catch (Exception syncEx) {
+                            android.util.Log.e("MealFragment", "Sync error: " + syncEx.getMessage());
+                        }
+
                         // Sync all updated meals to Firebase
                         if (updatedCount > 0) {
                             List<com.messkhata.data.model.Meal> updatedMeals = mealDao.getMealsForTodayAndFuture(messId);
@@ -460,7 +480,20 @@ public class MealFragment extends Fragment {
                                 syncManager.syncMealImmediate(meal);
                             }
                             android.util.Log.d("MealFragment", "Synced " + updatedMeals.size() + " meals to Firebase");
+                            
+                            // Give time for meals to sync
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
+                    }
+                    
+                    // Restart realtime listeners after sync completes
+                    if (wasListening) {
+                        realtimeSync.startListening(messId);
+                        android.util.Log.d("MealFragment", "Restarted realtime sync");
                     }
 
                     requireActivity().runOnUiThread(() -> {
@@ -471,13 +504,6 @@ public class MealFragment extends Fragment {
                             Toast.makeText(requireContext(),
                                     "Meal rate updated successfully! New rate: ৳" + String.format(Locale.getDefault(), "%.2f", total),
                                     Toast.LENGTH_LONG).show();
-
-                            // Sync meal rate to cloud for other members
-                            try {
-                                SyncManager.getInstance(requireContext()).syncMessImmediate(messId);
-                            } catch (Exception syncEx) {
-                                android.util.Log.e("MealFragment", "Sync error: " + syncEx.getMessage());
-                            }
 
                             // Refresh meal expense display
                             updateTotalAndSave();
