@@ -1,5 +1,9 @@
 package com.messkhata.ui.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,6 +23,7 @@ import com.messkhata.R;
 import com.messkhata.data.dao.ReportDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.MemberBalance;
+import com.messkhata.data.sync.RealtimeSyncManager;
 import com.messkhata.ui.adapter.MemberBalanceAdapter;
 import com.messkhata.utils.PreferenceManager;
 
@@ -40,35 +46,46 @@ public class ReportFragment extends Fragment {
     private ImageButton btnPrevMonth;
     private ImageButton btnNextMonth;
     private RecyclerView rvMemberBalances;
-    
+
     // Expense breakdown TextViews
     private TextView tvGroceryAmount;
     private TextView tvUtilityAmount;
     private TextView tvGasAmount;
     private TextView tvRentAmount;
     private TextView tvOtherAmount;
-    
+
     // Adapter
     private MemberBalanceAdapter memberBalanceAdapter;
-    
+
     // DAOs
     private ReportDao reportDao;
-    
+
     // Session data
     private PreferenceManager prefManager;
     private int messId;
     private String userRole;
-    
+
+    // Broadcast receiver for real-time updates
+    private BroadcastReceiver syncReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Data updated from cloud - refresh UI
+            if (isAdded() && getActivity() != null) {
+                loadReport();
+            }
+        }
+    };
+
     // Current month
     private Calendar currentMonth;
-    
+
     // Member balance list
     private List<MemberBalance> memberBalances = new ArrayList<>();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_report, container, false);
     }
 
@@ -91,14 +108,14 @@ public class ReportFragment extends Fragment {
         btnPrevMonth = view.findViewById(R.id.btnPrevMonth);
         btnNextMonth = view.findViewById(R.id.btnNextMonth);
         rvMemberBalances = view.findViewById(R.id.rvBalances);
-        
+
         // Expense breakdown TextViews
         tvGroceryAmount = view.findViewById(R.id.tvGroceryAmount);
         tvUtilityAmount = view.findViewById(R.id.tvUtilityAmount);
         tvGasAmount = view.findViewById(R.id.tvGasAmount);
         tvRentAmount = view.findViewById(R.id.tvRentAmount);
         tvOtherAmount = view.findViewById(R.id.tvOtherAmount);
-        
+
         // Setup RecyclerView
         rvMemberBalances.setLayoutManager(new LinearLayoutManager(requireContext()));
     }
@@ -109,22 +126,22 @@ public class ReportFragment extends Fragment {
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        
+
         // Check if session exists
         String messIdStr = prefManager.getMessId();
         String userRoleStr = prefManager.getUserRole();
-        
+
         if (messIdStr == null) {
             Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             requireActivity().finish();
             return;
         }
-        
+
         messId = Integer.parseInt(messIdStr);
         userRole = userRoleStr != null ? userRoleStr : "MEMBER";
         currentMonth = Calendar.getInstance();
         updateMonthDisplay();
-        
+
         // Initialize adapter
         memberBalanceAdapter = new MemberBalanceAdapter(memberBalances);
         rvMemberBalances.setAdapter(memberBalanceAdapter);
@@ -136,7 +153,7 @@ public class ReportFragment extends Fragment {
             updateMonthDisplay();
             loadReport();
         });
-        
+
         btnNextMonth.setOnClickListener(v -> {
             currentMonth.add(Calendar.MONTH, 1);
             updateMonthDisplay();
@@ -154,20 +171,20 @@ public class ReportFragment extends Fragment {
         if (tvTotalExpenses == null || tvTotalMeals == null || memberBalanceAdapter == null) {
             return;
         }
-        
+
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 int year = currentMonth.get(Calendar.YEAR);
                 int month = currentMonth.get(Calendar.MONTH) + 1;
-                
+
                 // Load member balances
                 List<MemberBalance> balances = reportDao.getMemberBalances(messId, year, month);
-                
+
                 // Load summary data
                 double totalExpenses = reportDao.getTotalExpenses(messId, month, year);
                 int totalMeals = reportDao.getTotalMeals(messId, month, year);
                 double mealRate = reportDao.calculateMealRate(messId, month, year);
-                
+
                 // Load expense breakdown by category
                 double groceryAmount = reportDao.getExpenseByCategory(messId, "Grocery", month, year);
                 double utilityAmount = reportDao.getExpenseByCategory(messId, "Utility", month, year);
@@ -176,7 +193,7 @@ public class ReportFragment extends Fragment {
                 double maintenanceAmount = reportDao.getExpenseByCategory(messId, "Maintenance", month, year);
                 double otherAmount = reportDao.getExpenseByCategory(messId, "Other", month, year);
                 double totalOtherAmount = maintenanceAmount + otherAmount;
-                
+
                 requireActivity().runOnUiThread(() -> {
                     memberBalances.clear();
                     if (balances != null) {
@@ -185,24 +202,22 @@ public class ReportFragment extends Fragment {
                     tvTotalExpenses.setText(String.format(Locale.getDefault(), "৳ %.2f", totalExpenses));
                     tvTotalMeals.setText(String.valueOf(totalMeals));
                     tvMealRate.setText(String.format(Locale.getDefault(), "৳ %.2f", mealRate));
-                    
+
                     // Update expense breakdown
                     tvGroceryAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", groceryAmount));
                     tvUtilityAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", utilityAmount));
                     tvGasAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", gasAmount));
                     tvRentAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", rentAmount));
                     tvOtherAmount.setText(String.format(Locale.getDefault(), "৳ %.0f", totalOtherAmount));
-                    
+
                     // Update adapter
                     memberBalanceAdapter.updateMemberBalances(memberBalances);
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                requireActivity().runOnUiThread(() ->
-                    Toast.makeText(requireContext(), 
-                        "Error loading report", 
-                        Toast.LENGTH_SHORT).show()
-                );
+                requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(),
+                        "Error loading report",
+                        Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -210,6 +225,21 @@ public class ReportFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Register for real-time sync updates
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RealtimeSyncManager.ACTION_DATA_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_USERS_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_EXPENSES_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_MEALS_UPDATED);
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(syncReceiver, filter);
+
         loadReport();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Unregister broadcast receiver
+        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(syncReceiver);
     }
 }

@@ -1,5 +1,9 @@
 package com.messkhata.ui.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -21,6 +26,7 @@ import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Meal;
 import com.messkhata.data.model.Mess;
+import com.messkhata.data.sync.RealtimeSyncManager;
 import com.messkhata.utils.PreferenceManager;
 
 import java.text.SimpleDateFormat;
@@ -35,14 +41,14 @@ public class MealFragment extends Fragment {
     // UI Components - Header
     private TextView tvCurrentDate;
     private TextView tvDayOfWeek;
-    
+
     // UI Components - Summary
     private TextView tvTotalMealsToday;
     private TextView tvMealExpenseToday;
     private TextView tvBreakfastSummary;
     private TextView tvLunchSummary;
     private TextView tvDinnerSummary;
-    
+
     // UI Components - Meal Preference Counters
     private MaterialButton btnBreakfastMinus;
     private MaterialButton btnBreakfastPlus;
@@ -65,25 +71,36 @@ public class MealFragment extends Fragment {
     // DAOs
     private MealDao mealDao;
     private MessDao messDao;
-    
+
     // Session data
     private PreferenceManager prefManager;
     private long userId;
     private int messId;
     private String userRole;
-    
+
     // Meal counts
     private int breakfastCount = 1;
     private int lunchCount = 1;
     private int dinnerCount = 1;
-    
+
+    // Broadcast receiver for real-time updates
+    private BroadcastReceiver syncReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Data updated from cloud - refresh UI
+            if (isAdded() && getActivity() != null) {
+                loadTodayMeals();
+            }
+        }
+    };
+
     // Current date
     private Calendar currentDate;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_meal, container, false);
     }
 
@@ -103,29 +120,29 @@ public class MealFragment extends Fragment {
         // Header
         tvCurrentDate = view.findViewById(R.id.tvCurrentDate);
         tvDayOfWeek = view.findViewById(R.id.tvDayOfWeek);
-        
+
         // Summary (using different IDs to avoid conflict)
         tvTotalMealsToday = view.findViewById(R.id.tvTotalMealsToday);
         tvMealExpenseToday = view.findViewById(R.id.tvMealExpenseToday);
         tvBreakfastSummary = view.findViewById(R.id.tvBreakfastSummary);
         tvLunchSummary = view.findViewById(R.id.tvLunchSummary);
         tvDinnerSummary = view.findViewById(R.id.tvDinnerSummary);
-        
+
         // Preference counters
         btnBreakfastMinus = view.findViewById(R.id.btnBreakfastMinus);
         btnBreakfastPlus = view.findViewById(R.id.btnBreakfastPlus);
         tvBreakfastPrefCount = view.findViewById(R.id.tvBreakfastCount);
-        
+
         btnLunchMinus = view.findViewById(R.id.btnLunchMinus);
         btnLunchPlus = view.findViewById(R.id.btnLunchPlus);
         tvLunchPrefCount = view.findViewById(R.id.tvLunchCount);
-        
+
         btnDinnerMinus = view.findViewById(R.id.btnDinnerMinus);
         btnDinnerPlus = view.findViewById(R.id.btnDinnerPlus);
         tvDinnerPrefCount = view.findViewById(R.id.tvDinnerCount);
-        
+
         btnSavePreference = view.findViewById(R.id.btnSavePreference);
-        
+
         // Admin meal rate section
         cardAdminMealRate = view.findViewById(R.id.cardAdminMealRate);
         tvCurrentMealRate = view.findViewById(R.id.tvCurrentMealRate);
@@ -141,23 +158,23 @@ public class MealFragment extends Fragment {
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        
+
         // Check if session exists
         String userIdStr = prefManager.getUserId();
         String messIdStr = prefManager.getMessId();
-        
+
         if (userIdStr == null || messIdStr == null) {
             Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             requireActivity().finish();
             return;
         }
-        
+
         userId = Long.parseLong(userIdStr);
         messId = Integer.parseInt(messIdStr);
         userRole = prefManager.getUserRole();
         currentDate = Calendar.getInstance();
         updateDateDisplay();
-        
+
         // Show admin section if user is admin
         if ("admin".equals(userRole)) {
             cardAdminMealRate.setVisibility(View.VISIBLE);
@@ -169,18 +186,18 @@ public class MealFragment extends Fragment {
         // Breakfast counters
         btnBreakfastMinus.setOnClickListener(v -> updateCount("breakfast", -1));
         btnBreakfastPlus.setOnClickListener(v -> updateCount("breakfast", 1));
-        
+
         // Lunch counters
         btnLunchMinus.setOnClickListener(v -> updateCount("lunch", -1));
         btnLunchPlus.setOnClickListener(v -> updateCount("lunch", 1));
-        
+
         // Dinner counters
         btnDinnerMinus.setOnClickListener(v -> updateCount("dinner", -1));
         btnDinnerPlus.setOnClickListener(v -> updateCount("dinner", 1));
-        
+
         // Save preference button
         btnSavePreference.setOnClickListener(v -> saveMealPreference());
-        
+
         // Admin update meal rate button
         btnUpdateMealRate.setOnClickListener(v -> updateMealRates());
     }
@@ -200,7 +217,7 @@ public class MealFragment extends Fragment {
                 tvDinnerPrefCount.setText(String.valueOf(dinnerCount));
                 break;
         }
-        
+
         // Update total and save meal for today
         updateTotalAndSave();
     }
@@ -208,7 +225,7 @@ public class MealFragment extends Fragment {
     private void updateTotalAndSave() {
         int total = breakfastCount + lunchCount + dinnerCount;
         tvTotalMealsToday.setText(String.valueOf(total));
-        
+
         // Calculate and display meal expense
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
@@ -216,17 +233,17 @@ public class MealFragment extends Fragment {
                 if (mess != null) {
                     double mealRate = mess.getGroceryBudgetPerMeal() + mess.getCookingChargePerMeal();
                     double mealExpense = total * mealRate;
-                    
+
                     requireActivity().runOnUiThread(() -> {
-                        tvMealExpenseToday.setText(String.format(java.util.Locale.getDefault(), 
-                            "৳ %.2f", mealExpense));
+                        tvMealExpenseToday.setText(String.format(java.util.Locale.getDefault(),
+                                "৳ %.2f", mealExpense));
                     });
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-        
+
         // Save meal for today automatically
         saveTodayMeal();
     }
@@ -237,29 +254,26 @@ public class MealFragment extends Fragment {
                 // Get mess rate from Mess table
                 Mess mess = messDao.getMessByIdAsObject(messId);
                 if (mess == null) {
-                    requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "Error: Mess not found", Toast.LENGTH_SHORT).show()
-                    );
+                    requireActivity().runOnUiThread(
+                            () -> Toast.makeText(requireContext(), "Error: Mess not found", Toast.LENGTH_SHORT).show());
                     return;
                 }
-                
+
                 double mealRate = mess.getGroceryBudgetPerMeal() + mess.getCookingChargePerMeal();
                 long todayTimestamp = getTodayTimestamp();
-                
+
                 boolean success = mealDao.addOrUpdateMeal(
-                    (int) userId,
-                    messId,
-                    todayTimestamp,
-                    breakfastCount,
-                    lunchCount,
-                    dinnerCount,
-                    mealRate
-                );
-                
+                        (int) userId,
+                        messId,
+                        todayTimestamp,
+                        breakfastCount,
+                        lunchCount,
+                        dinnerCount,
+                        mealRate);
+
                 if (!success) {
-                    requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "Error saving meal", Toast.LENGTH_SHORT).show()
-                    );
+                    requireActivity().runOnUiThread(
+                            () -> Toast.makeText(requireContext(), "Error saving meal", Toast.LENGTH_SHORT).show());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -271,31 +285,28 @@ public class MealFragment extends Fragment {
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 boolean success = mealDao.saveMealPreference(
-                    (int) userId,
-                    messId,
-                    breakfastCount,
-                    lunchCount,
-                    dinnerCount
-                );
-                
+                        (int) userId,
+                        messId,
+                        breakfastCount,
+                        lunchCount,
+                        dinnerCount);
+
                 requireActivity().runOnUiThread(() -> {
                     if (success) {
-                        Toast.makeText(requireContext(), 
-                            "Preference saved! Will apply from tomorrow", 
-                            Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(),
+                                "Preference saved! Will apply from tomorrow",
+                                Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(requireContext(), 
-                            "Error saving preference", 
-                            Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(),
+                                "Error saving preference",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                requireActivity().runOnUiThread(() ->
-                    Toast.makeText(requireContext(), 
-                        "Error: " + e.getMessage(), 
-                        Toast.LENGTH_SHORT).show()
-                );
+                requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(),
+                        "Error: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -304,17 +315,17 @@ public class MealFragment extends Fragment {
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 int[] preference = mealDao.getMealPreference((int) userId);
-                
+
                 requireActivity().runOnUiThread(() -> {
                     if (preference != null) {
                         breakfastCount = preference[0];
                         lunchCount = preference[1];
                         dinnerCount = preference[2];
-                        
+
                         tvBreakfastPrefCount.setText(String.valueOf(breakfastCount));
                         tvLunchPrefCount.setText(String.valueOf(lunchCount));
                         tvDinnerPrefCount.setText(String.valueOf(dinnerCount));
-                        
+
                         updateTotalAndSave();
                     }
                 });
@@ -329,13 +340,13 @@ public class MealFragment extends Fragment {
             try {
                 long todayTimestamp = getTodayTimestamp();
                 Meal meal = mealDao.getMealByDate((int) userId, todayTimestamp);
-                
+
                 requireActivity().runOnUiThread(() -> {
                     if (meal != null) {
                         breakfastCount = meal.getBreakfast();
                         lunchCount = meal.getLunch();
                         dinnerCount = meal.getDinner();
-                        
+
                         tvBreakfastPrefCount.setText(String.valueOf(breakfastCount));
                         tvLunchPrefCount.setText(String.valueOf(lunchCount));
                         tvDinnerPrefCount.setText(String.valueOf(dinnerCount));
@@ -351,7 +362,7 @@ public class MealFragment extends Fragment {
     private void updateDateDisplay() {
         SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM, yyyy", Locale.getDefault());
         SimpleDateFormat dayFormat = new SimpleDateFormat("EEEE", Locale.getDefault());
-        
+
         tvCurrentDate.setText(monthFormat.format(currentDate.getTime()));
         tvDayOfWeek.setText(dayFormat.format(currentDate.getTime()));
     }
@@ -376,10 +387,10 @@ public class MealFragment extends Fragment {
                     double grocery = mess.getGroceryBudgetPerMeal();
                     double cooking = mess.getCookingChargePerMeal();
                     double total = grocery + cooking;
-                    
+
                     requireActivity().runOnUiThread(() -> {
                         tvCurrentMealRate.setText(String.format(Locale.getDefault(),
-                            "Current Rate: ৳ %.2f per meal", total));
+                                "Current Rate: ৳ %.2f per meal", total));
                         etGroceryBudget.setText(String.valueOf(grocery));
                         etCookingCharge.setText(String.valueOf(cooking));
                     });
@@ -394,62 +405,58 @@ public class MealFragment extends Fragment {
      * Update meal rates (Admin only)
      */
     private void updateMealRates() {
-        String groceryStr = etGroceryBudget.getText() != null ? 
-            etGroceryBudget.getText().toString().trim() : "";
-        String cookingStr = etCookingCharge.getText() != null ? 
-            etCookingCharge.getText().toString().trim() : "";
-        
+        String groceryStr = etGroceryBudget.getText() != null ? etGroceryBudget.getText().toString().trim() : "";
+        String cookingStr = etCookingCharge.getText() != null ? etCookingCharge.getText().toString().trim() : "";
+
         if (groceryStr.isEmpty() || cookingStr.isEmpty()) {
             Toast.makeText(requireContext(), "Please fill in both fields", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         try {
             double grocery = Double.parseDouble(groceryStr);
             double cooking = Double.parseDouble(cookingStr);
-            
+
             if (grocery < 0 || cooking < 0) {
                 Toast.makeText(requireContext(), "Rates cannot be negative", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
+
             if (grocery + cooking == 0) {
                 Toast.makeText(requireContext(), "Total rate cannot be zero", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
+
             // Update in database
             MessKhataDatabase.databaseWriteExecutor.execute(() -> {
                 try {
                     boolean success = messDao.updateMessRates(messId, grocery, cooking);
-                    
+
                     requireActivity().runOnUiThread(() -> {
                         if (success) {
                             double total = grocery + cooking;
                             tvCurrentMealRate.setText(String.format(Locale.getDefault(),
-                                "Current Rate: ৳ %.2f per meal", total));
-                            Toast.makeText(requireContext(), 
-                                "Meal rate updated successfully! New rate: ৳" + total, 
-                                Toast.LENGTH_LONG).show();
-                            
+                                    "Current Rate: ৳ %.2f per meal", total));
+                            Toast.makeText(requireContext(),
+                                    "Meal rate updated successfully! New rate: ৳" + total,
+                                    Toast.LENGTH_LONG).show();
+
                             // Refresh meal expense display
                             updateTotalAndSave();
                         } else {
-                            Toast.makeText(requireContext(), 
-                                "Failed to update meal rate", 
-                                Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(),
+                                    "Failed to update meal rate",
+                                    Toast.LENGTH_SHORT).show();
                         }
                     });
                 } catch (Exception e) {
                     e.printStackTrace();
-                    requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), 
-                            "Error: " + e.getMessage(), 
-                            Toast.LENGTH_SHORT).show()
-                    );
+                    requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(),
+                            "Error: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show());
                 }
             });
-            
+
         } catch (NumberFormatException e) {
             Toast.makeText(requireContext(), "Please enter valid numbers", Toast.LENGTH_SHORT).show();
         }
@@ -458,6 +465,19 @@ public class MealFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Register for real-time sync updates
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RealtimeSyncManager.ACTION_DATA_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_MEALS_UPDATED);
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(syncReceiver, filter);
+
         loadTodayMeals();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Unregister broadcast receiver
+        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(syncReceiver);
     }
 }

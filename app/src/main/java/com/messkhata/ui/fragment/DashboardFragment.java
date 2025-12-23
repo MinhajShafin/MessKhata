@@ -1,5 +1,9 @@
 package com.messkhata.ui.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.messkhata.R;
@@ -22,6 +27,7 @@ import com.messkhata.data.dao.UserDao;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.model.Mess;
 import com.messkhata.data.model.User;
+import com.messkhata.data.sync.RealtimeSyncManager;
 import com.messkhata.utils.PreferenceManager;
 
 import java.text.SimpleDateFormat;
@@ -58,10 +64,21 @@ public class DashboardFragment extends Fragment {
     private long userId;
     private int messId;
 
+    // Broadcast receiver for real-time updates
+    private BroadcastReceiver syncReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Data updated from cloud - refresh UI
+            if (isAdded() && getActivity() != null) {
+                loadDashboardData();
+            }
+        }
+    };
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_dashboard, container, false);
     }
 
@@ -99,18 +116,18 @@ public class DashboardFragment extends Fragment {
 
     private void loadSessionData() {
         prefManager = PreferenceManager.getInstance(requireContext());
-        
+
         // Check if session exists
         String userIdStr = prefManager.getUserId();
         String messIdStr = prefManager.getMessId();
-        
+
         if (userIdStr == null || messIdStr == null) {
             // Session invalid, redirect to login
             Toast.makeText(requireContext(), "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             requireActivity().finish();
             return;
         }
-        
+
         userId = Long.parseLong(userIdStr);
         messId = Integer.parseInt(messIdStr);
     }
@@ -125,7 +142,7 @@ public class DashboardFragment extends Fragment {
         if (swipeRefresh == null || tvUserName == null) {
             return;
         }
-        
+
         swipeRefresh.setRefreshing(true);
 
         // Load data in background thread
@@ -133,43 +150,43 @@ public class DashboardFragment extends Fragment {
             try {
                 // Get user data
                 User user = userDao.getUserByIdAsObject(userId);
-                
+
                 // Get mess data
                 Mess mess = messDao.getMessByIdAsObject(messId);
-                
+
                 // Get current month
                 Calendar calendar = Calendar.getInstance();
                 int currentMonth = calendar.get(Calendar.MONTH) + 1;
                 int currentYear = calendar.get(Calendar.YEAR);
-                
+
                 // Get user's total meals this month (for display)
                 int totalMeals = mealDao.getTotalMealsForMonth((int) userId, currentMonth, currentYear);
-                
+
                 // Get user's joined date
                 long userJoinDate = user != null ? user.getJoinedDate() : 0;
-                
+
                 // ===== FAIR EXPENSE CALCULATION =====
                 // Personal meals: ALL meals the user added (meals are personal, not shared)
                 double cumulativeMealExpense = mealDao.getCumulativeMealExpenseFromJoinDate((int) userId, userJoinDate);
-                
+
                 // Shared expenses: ONLY expenses added AFTER user joined
                 // Uses memberCountAtTime for accurate per-expense division
                 // New members don't pay for old expenses (fair system)
                 double userSharedExpense = expenseDao.getAccurateUserShareOfExpenses(messId, userJoinDate);
-                
+
                 // Total: Personal meals + Share of expenses since joining
                 double totalExpense = cumulativeMealExpense + userSharedExpense;
-                
+
                 // Get member count
                 List<User> members = userDao.getMembersByMessId(messId);
                 int memberCount = members.size();
-                
+
                 // Get current meal rate
                 double mealRate = mess != null ? mess.getFixedMealRate() : 50.0;
 
                 // Update UI on main thread
                 requireActivity().runOnUiThread(() -> {
-                    updateUI(user, mess, totalMeals, cumulativeMealExpense, totalExpense, 
+                    updateUI(user, mess, totalMeals, cumulativeMealExpense, totalExpense,
                             memberCount, mealRate);
                     swipeRefresh.setRefreshing(false);
                 });
@@ -177,8 +194,8 @@ public class DashboardFragment extends Fragment {
             } catch (Exception e) {
                 e.printStackTrace();
                 requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), 
-                            "Error loading dashboard: " + e.getMessage(), 
+                    Toast.makeText(requireContext(),
+                            "Error loading dashboard: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                     swipeRefresh.setRefreshing(false);
                 });
@@ -187,7 +204,7 @@ public class DashboardFragment extends Fragment {
     }
 
     private void updateUI(User user, Mess mess, int totalMeals, double totalMealExpense,
-                         double totalExpense, int memberCount, double mealRate) {
+            double totalExpense, int memberCount, double mealRate) {
         // Set greeting based on time of day
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -223,7 +240,22 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Register for real-time sync updates
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RealtimeSyncManager.ACTION_DATA_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_USERS_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_EXPENSES_UPDATED);
+        filter.addAction(RealtimeSyncManager.ACTION_MEALS_UPDATED);
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(syncReceiver, filter);
+
         // Refresh data when fragment becomes visible
         loadDashboardData();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Unregister broadcast receiver
+        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(syncReceiver);
     }
 }

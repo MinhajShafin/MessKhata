@@ -16,6 +16,9 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.messkhata.data.database.MessKhataDatabase;
 import com.messkhata.data.sync.FirebaseAuthHelper;
+import com.messkhata.data.sync.MessKhataFirebaseMessagingService;
+import com.messkhata.data.sync.NetworkChangeReceiver;
+import com.messkhata.data.sync.RealtimeSyncManager;
 import com.messkhata.data.sync.SyncManager;
 import com.messkhata.data.sync.SyncWorker;
 import com.messkhata.ui.activity.LoginActivity;
@@ -102,8 +105,14 @@ public class MainActivity extends AppCompatActivity {
         // Initialize network monitoring
         NetworkUtils networkUtils = NetworkUtils.getInstance(this);
 
+        // Register network change callback for offline queue processing
+        NetworkChangeReceiver.registerNetworkCallback(this);
+
         // Initialize Firebase sync
         MessKhataDatabase database = MessKhataDatabase.getInstance(this);
+
+        // Refresh FCM token for push notifications
+        MessKhataFirebaseMessagingService.refreshToken(this);
 
         String messId = prefManager.getMessId();
         String userId = prefManager.getUserId();
@@ -193,17 +202,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Trigger sync when app comes to foreground
-        triggerSyncOnResume();
+        // Start real-time sync listeners
+        startRealtimeSync();
     }
 
-    private void triggerSyncOnResume() {
+    private void startRealtimeSync() {
         String messIdStr = prefManager.getMessId();
         if (messIdStr != null && !messIdStr.isEmpty()) {
             try {
                 int messId = Integer.parseInt(messIdStr);
                 if (messId > 0) {
-                    // Perform sync in background
+                    // Start real-time listeners for automatic updates
+                    RealtimeSyncManager.getInstance(this).startListening(messId);
+
+                    // Also do an initial sync to ensure data is up to date
                     SyncManager syncManager = SyncManager.getInstance(this);
                     syncManager.performFullSync(messId);
                 }
@@ -214,8 +226,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop real-time listeners when app goes to background
+        RealtimeSyncManager.getInstance(this).stopListening();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Cleanup if needed
+        // Ensure listeners are stopped
+        RealtimeSyncManager.getInstance(this).stopListening();
+        // Unregister network callback
+        NetworkChangeReceiver.unregisterNetworkCallback(this);
     }
 }
