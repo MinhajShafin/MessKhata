@@ -227,26 +227,13 @@ public class RealtimeSyncManager {
             try {
                 SyncableMess mess = SyncableMess.fromFirebaseMap(snapshot.getId(), snapshot.getData());
 
-                // // Get current local mess data to compare timestamps
-                // Mess localMess = messDao.getMessByIdAsObject(currentLocalMessId);
-                
-                // // Only update if Firebase data is newer (has been modified more recently)
-                // // This prevents overwriting recent local changes with stale cloud data
-                // if (localMess != null && mess.getLastModified() > 0) {
-                //     // Check if we have a local modification time (we should add this to Mess table)
-                //     // For now, always update from Firebase since we don't track local modification time
-                //     Log.d(TAG, "Updating mess rates from Firebase: grocery=" + mess.getGroceryBudgetPerMeal()
-                //             + ", cooking=" + mess.getCookingChargePerMeal()
-                //             + ", lastModified=" + mess.getLastModified());
-                // }
-
                 // Update local mess with new meal rates
                 messDao.updateMessRates(
                         currentLocalMessId,
                         mess.getGroceryBudgetPerMeal(),
                         mess.getCookingChargePerMeal());
 
-                Log.d(TAG, "Updated mess rates: grocery=" + mess.getGroceryBudgetPerMeal()
+                Log.d(TAG, "Updated mess rates from Firebase: grocery=" + mess.getGroceryBudgetPerMeal()
                         + ", cooking=" + mess.getCookingChargePerMeal());
 
                 // Broadcast update

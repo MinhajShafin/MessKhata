@@ -234,13 +234,18 @@ public class SyncManager {
                         cursor.getLong(cursor.getColumnIndexOrThrow("createdDate")));
                 cursor.close();
 
+                // Get existing firebaseMessId
+                String firebaseMessId = messDao.getFirebaseMessId(messId);
+                
                 SyncableMess syncableMess = new SyncableMess(mess);
+                syncableMess.setFirebaseId(firebaseMessId);
                 syncableMess.setLastModified(System.currentTimeMillis());
 
                 Task<DocumentReference> task = firebaseRepo.saveMess(syncableMess);
                 Tasks.await(task);
 
-                Log.d(TAG, "Mess synced to cloud: " + messId);
+                Log.d(TAG, "Mess synced to cloud: " + messId + " with rates: grocery=" 
+                        + mess.getGroceryBudgetPerMeal() + ", cooking=" + mess.getCookingChargePerMeal());
             }
         } catch (Exception e) {
             Log.e(TAG, "Error syncing mess", e);
@@ -389,6 +394,26 @@ public class SyncManager {
         }
 
         Log.d(TAG, "Downloading remote changes using firebaseMessId: " + firebaseMessId);
+
+        // Download mess data (meal rates) FIRST
+        try {
+            Log.d(TAG, "Downloading mess data for firebaseMessId: " + firebaseMessId);
+            Task<SyncableMess> messTask = firebaseRepo.getMessByFirebaseId(firebaseMessId);
+            SyncableMess remoteMess = Tasks.await(messTask);
+            
+            if (remoteMess != null) {
+                // Update local mess rates with Firebase data
+                messDao.updateMessRates(
+                        messId,
+                        remoteMess.getGroceryBudgetPerMeal(),
+                        remoteMess.getCookingChargePerMeal());
+                Log.d(TAG, "Updated local mess rates from Firebase: grocery=" + 
+                        remoteMess.getGroceryBudgetPerMeal() + ", cooking=" + 
+                        remoteMess.getCookingChargePerMeal());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error downloading mess data", e);
+        }
 
         // IMPORTANT: Download users FIRST - this is the most critical for member count
         // This query doesn't need a composite index (single field query)
