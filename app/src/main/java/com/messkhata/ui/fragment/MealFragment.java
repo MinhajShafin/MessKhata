@@ -174,9 +174,9 @@ public class MealFragment extends Fragment {
         userRole = prefManager.getUserRole();
         currentDate = Calendar.getInstance();
         updateDateDisplay();
-
-        // Show admin section if user is admin
-        if ("admin".equals(userRole)) {
+        
+        // Show admin section if user is admin (case-insensitive check)
+        if (userRole != null && userRole.equalsIgnoreCase("admin")) {
             cardAdminMealRate.setVisibility(View.VISIBLE);
             loadCurrentMealRates();
         }
