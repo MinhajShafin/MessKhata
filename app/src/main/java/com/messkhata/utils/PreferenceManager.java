@@ -94,4 +94,26 @@ public class PreferenceManager {
         return preferences.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
     }
 
+    // FCM Token Management
+    public void setFcmToken(String token) {
+        preferences.edit()
+                .putString("fcm_token", token)
+                .apply();
+    }
+
+    public String getFcmToken() {
+        return preferences.getString("fcm_token", null);
+    }
+
+    // Firebase Mess ID for notifications
+    public void setFirebaseMessId(String firebaseMessId) {
+        preferences.edit()
+                .putString("firebase_mess_id", firebaseMessId)
+                .apply();
+    }
+
+    public String getFirebaseMessId() {
+        return preferences.getString("firebase_mess_id", null);
+    }
+
 }

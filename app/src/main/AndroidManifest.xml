@@ -54,6 +54,24 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+        <!-- Firebase Cloud Messaging Service -->
+        <service
+            android:name=".data.sync.MessKhataFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- FCM default notification channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="general_notifications" />
+
+        <!-- FCM default notification icon -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
 
         <!-- Boot Receiver for WorkManager -->
         <receiver

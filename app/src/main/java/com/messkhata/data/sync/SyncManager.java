@@ -555,64 +555,128 @@ public class SyncManager {
 
     /**
      * Sync a single meal immediately
+     * If offline, queues the operation for later
      */
     public void syncMealImmediate(Meal meal) {
-        if (!isSyncEnabled() || !isNetworkAvailable() || !isAuthenticated()) {
+        if (!isSyncEnabled() || !isAuthenticated()) {
             return;
         }
 
+        // Get sync data ready
+        SyncableMeal syncableMeal = new SyncableMeal(meal);
+        syncableMeal.setLastModified(System.currentTimeMillis());
+
+        // Set firebaseMessId for cross-device sync
+        String firebaseMessId = messDao.getFirebaseMessId(meal.getMessId());
+        if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+            syncableMeal.setFirebaseMessId(firebaseMessId);
+        }
+
+        // Set userEmail for cross-device user matching
+        User user = userDao.getUserByIdAsObject(meal.getUserId());
+        if (user != null && user.getEmail() != null) {
+            syncableMeal.setUserEmail(user.getEmail());
+        }
+
+        // If offline, queue the operation
+        if (!isNetworkAvailable()) {
+            Log.d(TAG, "Offline - queuing meal sync for later");
+            OfflineQueueManager.getInstance(context).queueOperation(
+                    OfflineQueueManager.OP_UPDATE,
+                    OfflineQueueManager.ENTITY_MEAL,
+                    String.valueOf(meal.getMealId()),
+                    syncableMeal.getFirebaseId(),
+                    firebaseMessId,
+                    syncableMeal);
+            return;
+        }
+
+        final String finalFirebaseMessId = firebaseMessId;
+        final int totalMeals = meal.getBreakfast() + meal.getLunch() + meal.getDinner();
         executor.execute(() -> {
             try {
-                SyncableMeal syncableMeal = new SyncableMeal(meal);
-                syncableMeal.setLastModified(System.currentTimeMillis());
-
-                // Set firebaseMessId for cross-device sync
-                String firebaseMessId = messDao.getFirebaseMessId(meal.getMessId());
-                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
-                    syncableMeal.setFirebaseMessId(firebaseMessId);
-                }
-
-                // Set userEmail for cross-device user matching
-                User user = userDao.getUserByIdAsObject(meal.getUserId());
-                if (user != null && user.getEmail() != null) {
-                    syncableMeal.setUserEmail(user.getEmail());
-                }
-
                 Task<DocumentReference> task = firebaseRepo.saveMeal(syncableMeal);
                 Tasks.await(task);
 
                 Log.d(TAG, "Meal synced immediately: " + meal.getMealId());
+
+                // Send notification to other mess members (only if significant update)
+                if (finalFirebaseMessId != null && !finalFirebaseMessId.isEmpty()) {
+                    NotificationHelper.getInstance(context).notifyMealUpdated(
+                            finalFirebaseMessId,
+                            totalMeals);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error syncing meal immediately", e);
+                // Queue for retry if sync fails
+                OfflineQueueManager.getInstance(context).queueOperation(
+                        OfflineQueueManager.OP_UPDATE,
+                        OfflineQueueManager.ENTITY_MEAL,
+                        String.valueOf(meal.getMealId()),
+                        syncableMeal.getFirebaseId(),
+                        finalFirebaseMessId,
+                        syncableMeal);
             }
         });
     }
 
     /**
      * Sync a single expense immediately
+     * If offline, queues the operation for later
      */
     public void syncExpenseImmediate(Expense expense) {
-        if (!isSyncEnabled() || !isNetworkAvailable() || !isAuthenticated()) {
+        if (!isSyncEnabled() || !isAuthenticated()) {
             return;
         }
 
+        // Get sync data ready
+        SyncableExpense syncableExpense = new SyncableExpense(expense);
+        syncableExpense.setLastModified(System.currentTimeMillis());
+
+        // Set firebaseMessId for cross-device sync
+        String firebaseMessId = messDao.getFirebaseMessId(expense.getMessId());
+        if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
+            syncableExpense.setFirebaseMessId(firebaseMessId);
+        }
+
+        // If offline, queue the operation
+        if (!isNetworkAvailable()) {
+            Log.d(TAG, "Offline - queuing expense sync for later");
+            OfflineQueueManager.getInstance(context).queueOperation(
+                    OfflineQueueManager.OP_CREATE,
+                    OfflineQueueManager.ENTITY_EXPENSE,
+                    String.valueOf(expense.getExpenseId()),
+                    null,
+                    firebaseMessId,
+                    syncableExpense);
+            return;
+        }
+
+        final String finalFirebaseMessId = firebaseMessId;
         executor.execute(() -> {
             try {
-                SyncableExpense syncableExpense = new SyncableExpense(expense);
-                syncableExpense.setLastModified(System.currentTimeMillis());
-
-                // Set firebaseMessId for cross-device sync
-                String firebaseMessId = messDao.getFirebaseMessId(expense.getMessId());
-                if (firebaseMessId != null && !firebaseMessId.isEmpty()) {
-                    syncableExpense.setFirebaseMessId(firebaseMessId);
-                }
-
                 Task<DocumentReference> task = firebaseRepo.saveExpense(syncableExpense);
                 Tasks.await(task);
 
                 Log.d(TAG, "Expense synced immediately: " + expense.getExpenseId());
+
+                // Send notification to other mess members
+                if (finalFirebaseMessId != null && !finalFirebaseMessId.isEmpty()) {
+                    NotificationHelper.getInstance(context).notifyExpenseAdded(
+                            finalFirebaseMessId,
+                            expense.getCategory(),
+                            expense.getAmount());
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error syncing expense immediately", e);
+                // Queue for retry if sync fails
+                OfflineQueueManager.getInstance(context).queueOperation(
+                        OfflineQueueManager.OP_CREATE,
+                        OfflineQueueManager.ENTITY_EXPENSE,
+                        String.valueOf(expense.getExpenseId()),
+                        null,
+                        finalFirebaseMessId,
+                        syncableExpense);
             }
         });
     }
