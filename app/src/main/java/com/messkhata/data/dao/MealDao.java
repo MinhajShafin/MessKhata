@@ -379,5 +379,72 @@ public class MealDao {
         android.util.Log.d("MealDao", "Updated " + rows + " meals to new rate: " + newMealRate);
         return rows;
     }
+
+    /**
+     * Update meal rate for today's and future meals
+     * @return Number of rows updated
+     */
+    public int updateMealRateForTodayAndFuture(int messId, double newMealRate) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        // Get today's timestamp (midnight)
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        long todayTimestamp = calendar.getTimeInMillis() / 1000;
+
+        ContentValues values = new ContentValues();
+        values.put("mealRate", newMealRate);
+        values.put("updatedAt", System.currentTimeMillis() / 1000);
+
+        int rows = db.update(MessKhataDatabase.TABLE_MEALS,
+                values,
+                "messId = ? AND mealDate >= ?",
+                new String[]{String.valueOf(messId), String.valueOf(todayTimestamp)});
+
+        android.util.Log.d("MealDao", "Updated " + rows + " meals (today and future) to new rate: " + newMealRate);
+        return rows;
+    }
+
+    /**
+     * Get all meals for today and future dates in a mess
+     * @return List of Meal objects
+     */
+    public List<Meal> getMealsForTodayAndFuture(int messId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Meal> meals = new ArrayList<>();
+
+        // Get today's timestamp (midnight)
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        long todayTimestamp = calendar.getTimeInMillis() / 1000;
+
+        String query = "SELECT * FROM " + MessKhataDatabase.TABLE_MEALS +
+                " WHERE messId = ? AND mealDate >= ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+                String.valueOf(messId),
+                String.valueOf(todayTimestamp)
+        });
+
+        while (cursor.moveToNext()) {
+            Meal meal = new Meal(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("mealId")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("userId")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("messId")),
+                    cursor.getLong(cursor.getColumnIndexOrThrow("mealDate")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("breakfast")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("lunch")),
+                    cursor.getInt(cursor.getColumnIndexOrThrow("dinner")),
+                    cursor.getDouble(cursor.getColumnIndexOrThrow("mealRate"))
+            );
+            meals.add(meal);
+        }
+        cursor.close();
+        return meals;
+    }
 }
 

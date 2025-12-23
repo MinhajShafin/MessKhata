@@ -446,11 +446,20 @@ public class MealFragment extends Fragment {
                     android.util.Log.d("MealFragment", "Update result: " + success);
 
                     if (success) {
-                        // Update today's meal rate for all members
+                        // Update today's and future meal rates for all members
                         double newRate = grocery + cooking;
-                        long todayTimestamp = getTodayTimestamp();
-                        mealDao.updateMealRateForDate(messId, todayTimestamp, newRate);
-                        android.util.Log.d("MealFragment", "Updated today's meal rate to: " + newRate);
+                        int updatedCount = mealDao.updateMealRateForTodayAndFuture(messId, newRate);
+                        android.util.Log.d("MealFragment", "Updated " + updatedCount + " meals to new rate: " + newRate);
+
+                        // Sync all updated meals to Firebase
+                        if (updatedCount > 0) {
+                            List<com.messkhata.data.model.Meal> updatedMeals = mealDao.getMealsForTodayAndFuture(messId);
+                            com.messkhata.data.sync.SyncManager syncManager = com.messkhata.data.sync.SyncManager.getInstance(requireContext());
+                            for (com.messkhata.data.model.Meal meal : updatedMeals) {
+                                syncManager.syncMealImmediate(meal);
+                            }
+                            android.util.Log.d("MealFragment", "Synced " + updatedMeals.size() + " meals to Firebase");
+                        }
                     }
 
                     requireActivity().runOnUiThread(() -> {
