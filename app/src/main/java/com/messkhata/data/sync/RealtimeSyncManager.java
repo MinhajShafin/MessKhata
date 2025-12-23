@@ -15,6 +15,7 @@ import com.messkhata.data.dao.ExpenseDao;
 import com.messkhata.data.dao.MealDao;
 import com.messkhata.data.dao.MessDao;
 import com.messkhata.data.dao.UserDao;
+import com.messkhata.data.model.Mess;
 import com.messkhata.data.sync.model.SyncableExpense;
 import com.messkhata.data.sync.model.SyncableMeal;
 import com.messkhata.data.sync.model.SyncableMess;
