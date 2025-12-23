@@ -409,6 +409,8 @@ public class MealFragment extends Fragment {
         String groceryStr = etGroceryBudget.getText() != null ? etGroceryBudget.getText().toString().trim() : "";
         String cookingStr = etCookingCharge.getText() != null ? etCookingCharge.getText().toString().trim() : "";
 
+        android.util.Log.d("MealFragment", "Update clicked - Grocery: " + groceryStr + ", Cooking: " + cookingStr);
+
         if (groceryStr.isEmpty() || cookingStr.isEmpty()) {
             Toast.makeText(requireContext(), "Please fill in both fields", Toast.LENGTH_SHORT).show();
             return;
@@ -417,6 +419,8 @@ public class MealFragment extends Fragment {
         try {
             double grocery = Double.parseDouble(groceryStr);
             double cooking = Double.parseDouble(cookingStr);
+
+            android.util.Log.d("MealFragment", "Parsed values - Grocery: " + grocery + ", Cooking: " + cooking + ", MessId: " + messId);
 
             if (grocery < 0 || cooking < 0) {
                 Toast.makeText(requireContext(), "Rates cannot be negative", Toast.LENGTH_SHORT).show();
@@ -431,7 +435,17 @@ public class MealFragment extends Fragment {
             // Update in database
             MessKhataDatabase.databaseWriteExecutor.execute(() -> {
                 try {
+                    android.util.Log.d("MealFragment", "Calling updateMessRates with messId: " + messId);
                     boolean success = messDao.updateMessRates(messId, grocery, cooking);
+                    android.util.Log.d("MealFragment", "Update result: " + success);
+
+                    if (success) {
+                        // Update today's meal rate for all members
+                        double newRate = grocery + cooking;
+                        long todayTimestamp = getTodayTimestamp();
+                        mealDao.updateMealRateForDate(messId, todayTimestamp, newRate);
+                        android.util.Log.d("MealFragment", "Updated today's meal rate to: " + newRate);
+                    }
 
                     requireActivity().runOnUiThread(() -> {
                         if (success) {
@@ -439,11 +453,15 @@ public class MealFragment extends Fragment {
                             tvCurrentMealRate.setText(String.format(Locale.getDefault(),
                                     "Current Rate: ৳ %.2f per meal", total));
                             Toast.makeText(requireContext(),
-                                    "Meal rate updated successfully! New rate: ৳" + total,
+                                    "Meal rate updated successfully! New rate: ৳" + String.format(Locale.getDefault(), "%.2f", total),
                                     Toast.LENGTH_LONG).show();
 
                             // Sync meal rate to cloud for other members
-                            SyncManager.getInstance(requireContext()).syncMessImmediate(messId);
+                            try {
+                                SyncManager.getInstance(requireContext()).syncMessImmediate(messId);
+                            } catch (Exception syncEx) {
+                                android.util.Log.e("MealFragment", "Sync error: " + syncEx.getMessage());
+                            }
 
                             // Refresh meal expense display
                             updateTotalAndSave();
@@ -455,6 +473,7 @@ public class MealFragment extends Fragment {
                     });
                 } catch (Exception e) {
                     e.printStackTrace();
+                    android.util.Log.e("MealFragment", "Error updating meal rate", e);
                     requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(),
                             "Error: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show());

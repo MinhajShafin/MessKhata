@@ -355,4 +355,29 @@ public class MealDao {
 
         return db.rawQuery(query, new String[]{String.valueOf(messId), String.valueOf(messId)});
     }
+
+    /**
+     * Update meal rate for all meals on a specific date
+     * Used when admin updates mess meal rate - updates today's meals to new rate
+     * @param messId The mess ID
+     * @param mealDate The date (timestamp) of meals to update
+     * @param newMealRate The new meal rate
+     * @return Number of rows updated
+     */
+    public int updateMealRateForDate(int messId, long mealDate, double newMealRate) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("mealRate", newMealRate);
+        values.put("updatedAt", System.currentTimeMillis() / 1000);
+
+        int rows = db.update(MessKhataDatabase.TABLE_MEALS,
+                values,
+                "messId = ? AND mealDate = ?",
+                new String[]{String.valueOf(messId), String.valueOf(mealDate)});
+
+        android.util.Log.d("MealDao", "Updated " + rows + " meals to new rate: " + newMealRate);
+        return rows;
+    }
 }
+
