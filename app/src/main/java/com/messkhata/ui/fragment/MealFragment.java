@@ -272,7 +272,13 @@ public class MealFragment extends Fragment {
                         dinnerCount,
                         mealRate);
 
-                if (!success) {
+                if (success) {
+                    // Sync meal to Firebase immediately
+                    Meal meal = mealDao.getMealByDate((int) userId, todayTimestamp);
+                    if (meal != null) {
+                        com.messkhata.data.sync.SyncManager.getInstance(requireContext()).syncMealImmediate(meal);
+                    }
+                } else {
                     requireActivity().runOnUiThread(
                             () -> Toast.makeText(requireContext(), "Error saving meal", Toast.LENGTH_SHORT).show());
                 }
