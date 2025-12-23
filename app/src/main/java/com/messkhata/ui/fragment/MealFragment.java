@@ -85,17 +85,26 @@ public class MealFragment extends Fragment {
     private int lunchCount = 1;
     private int dinnerCount = 1;
 
+    // Flag to prevent reloading during local updates
+    private volatile boolean isLocalUpdate = false;
+
     // Broadcast receiver for real-time updates
     private BroadcastReceiver syncReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // Skip reload if we're in the middle of a local update
+            if (isLocalUpdate) {
+                android.util.Log.d("MealFragment", "Skipping reload - local update in progress");
+                return;
+            }
+            
             // Data updated from cloud - refresh UI after a small delay
             // to allow local changes to sync to Firebase first
             if (isAdded() && getActivity() != null) {
                 // Only reload if this is truly a remote change
                 // Skip immediate reloads that might be from local sync operations
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                    if (isAdded() && getActivity() != null) {
+                    if (isAdded() && getActivity() != null && !isLocalUpdate) {
                         loadTodayMeals();
                     }
                 }, 300); // 300ms delay to allow sync to complete
@@ -258,13 +267,17 @@ public class MealFragment extends Fragment {
     }
 
     private void saveTodayMeal() {
+        isLocalUpdate = true; // Set flag to prevent broadcast reloads
+        
         MessKhataDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 // Get mess rate from Mess table
                 Mess mess = messDao.getMessByIdAsObject(messId);
                 if (mess == null) {
-                    requireActivity().runOnUiThread(
-                            () -> Toast.makeText(requireContext(), "Error: Mess not found", Toast.LENGTH_SHORT).show());
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Error: Mess not found", Toast.LENGTH_SHORT).show();
+                        isLocalUpdate = false;
+                    });
                     return;
                 }
 
@@ -286,12 +299,23 @@ public class MealFragment extends Fragment {
                     if (meal != null) {
                         com.messkhata.data.sync.SyncManager.getInstance(requireContext()).syncMealImmediate(meal);
                     }
+                    
+                    // Clear flag after a delay to allow sync to complete
+                    requireActivity().runOnUiThread(() -> {
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            isLocalUpdate = false;
+                            android.util.Log.d("MealFragment", "Local update flag cleared");
+                        }, 2000); // 2 seconds to allow Firebase sync
+                    });
                 } else {
-                    requireActivity().runOnUiThread(
-                            () -> Toast.makeText(requireContext(), "Error saving meal", Toast.LENGTH_SHORT).show());
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Error saving meal", Toast.LENGTH_SHORT).show();
+                        isLocalUpdate = false;
+                    });
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                requireActivity().runOnUiThread(() -> isLocalUpdate = false);
             }
         });
     }
