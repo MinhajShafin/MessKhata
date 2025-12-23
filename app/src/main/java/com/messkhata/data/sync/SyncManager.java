@@ -599,13 +599,6 @@ public class SyncManager {
                 Tasks.await(task);
 
                 Log.d(TAG, "Meal synced immediately: " + meal.getMealId());
-
-                // Send notification to other mess members (only if significant update)
-                if (finalFirebaseMessId != null && !finalFirebaseMessId.isEmpty()) {
-                    NotificationHelper.getInstance(context).notifyMealUpdated(
-                            finalFirebaseMessId,
-                            totalMeals);
-                }
             } catch (Exception e) {
                 Log.e(TAG, "Error syncing meal immediately", e);
                 // Queue for retry if sync fails
@@ -659,14 +652,6 @@ public class SyncManager {
                 Tasks.await(task);
 
                 Log.d(TAG, "Expense synced immediately: " + expense.getExpenseId());
-
-                // Send notification to other mess members
-                if (finalFirebaseMessId != null && !finalFirebaseMessId.isEmpty()) {
-                    NotificationHelper.getInstance(context).notifyExpenseAdded(
-                            finalFirebaseMessId,
-                            expense.getCategory(),
-                            expense.getAmount());
-                }
             } catch (Exception e) {
                 Log.e(TAG, "Error syncing expense immediately", e);
                 // Queue for retry if sync fails
